@@ -1,0 +1,65 @@
+'use strict';
+
+const restify = require('restify');
+
+function ApiServer(pulley) {
+  const self = this;
+
+  pulley.apiServer = restify.createServer({
+    name: pulley.options.name + ' API Server',
+    ignoreTrailingSlash: true,
+    strictNext: true
+  });
+
+  ////////////////////
+
+  pulley.apiServer.use(restify.pre.sanitizePath());
+  pulley.apiServer.use(restify.plugins.dateParser());
+  pulley.apiServer.use(restify.plugins.queryParser());
+  pulley.apiServer.use(restify.plugins.bodyParser());
+  pulley.apiServer.use(restify.plugins.authorizationParser());
+
+  pulley.apiServer.use(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST, PUT');
+    res.header('Access-Control-Allow-Headers', 'Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization');
+
+    res.header(pulley.options.name + '-version', pulley.version);
+
+    if (!pulley.options.silent) {
+      //pulley.util.logger(req);
+    }
+    next();
+  });
+
+  pulley.placeHolder = function(req, res, next) {
+    console.log('%s: %s %s', 'UNIMPLEMENTED ENDPOINT',
+                req.method, req.url);
+
+    res.send(200, {
+      message: 'placeholder'
+    });
+    next();
+  };
+
+  ////////////////////
+
+  pulley.apiServer.get('/api', pulley.placeHolder);
+
+  ////////////////////
+
+  self.boot = function() {
+    pulley.apiServer.listen(pulley.config.apiPort, function() {
+      console.log(`Pulley API Server running on ${ pulley.config.apiPort }`);
+    });
+  };
+
+  ////////////////////
+
+  return self;
+}
+
+module.exports = function (pulley) {
+  return new ApiServer(pulley);
+};
