@@ -6,7 +6,7 @@ function ApiServer(pulley) {
   const self = this;
 
   pulley.apiServer = restify.createServer({
-    name: pulley.options.name + ' API Server',
+    name: pulley.config.name + ' API Server',
     ignoreTrailingSlash: true,
     strictNext: true
   });
@@ -49,9 +49,12 @@ function ApiServer(pulley) {
 
   ////////////////////
 
-  self.boot = function() {
-    pulley.apiServer.listen(pulley.config.apiPort, function() {
-      console.log(`Pulley API Server running on ${ pulley.config.apiPort }`);
+  self.boot = function(callback) {
+    pulley.apiServer.listen(pulley.config.api.port, function() {
+      console.log(`Pulley API Server running on ${ pulley.config.api.port }`);
+      if (callback) {
+        callback(null);
+      }
     });
   };
 

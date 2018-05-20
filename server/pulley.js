@@ -1,39 +1,77 @@
-#!/usr/bin/env node
-
 'use strict';
 
-////////////////////////////////////////////////
-
-const defaultConfig = {
-  apiPort: 2929,
-  smtpPort: 25
-};
-
-const defaultOptions = {
-  name: 'pulley'
-};
+const path = require('path');
+const async = require('async');
 
 ////////////////////////////////////////////////
 
-function Pulley(config, options) {
+const defaults = {
+  name: 'pulley',
+
+  api: {
+    port: 2929
+  },
+
+  email: {
+    incoming: {
+      enabled: true,
+      port: 25
+    },
+    outgoing: {
+      enabled: true,
+      replyAddress: 'no-reply@pulley.blue'
+    }
+  },
+
+  plugins: {},
+
+  datastore: {
+    engine: 'memory'
+  },
+
+  git: {
+    path: '/tmp/',
+    credentials: {
+      type: 'local-key',
+      publicKey: path.join(process.env.HOME, '.ssh/id_rsa.pub'),
+      privateKey: path.join(process.env.HOME, '.ssh/id_rsa'),
+      passphrase: ''
+    }
+  }
+};
+
+////////////////////////////////////////////////
+
+function Pulley(config) {
   const self = this;
 
   ////////////////////
 
   self.version = require('../package.json').version;
 
-  self.config = Object.assign(defaultConfig, config);
-  self.options = Object.assign(defaultOptions, options);
+  self.config = Object.assign(defaults, config);
 
   ////////////////////
+
+  self.store = require('./datastore')(self);
 
   self.api = require('./apiServer')(self);
   self.smtp = require('./smtpServer')(self);
 
   ////////////////////
 
-  self.boot = function () {
-    self.api.boot();
+  self.boot = function (callback) {
+    async.parallel([ self.store.load, self.api.boot, self.smtp.boot ], function(error) {
+      if (callback) {
+        callback(error);
+      }
+    });
+  };
+
+  self.shutdown = function() {
+    if (self.apiServer) {
+      self.apiServer.close();
+    }
   };
 
   ////////////////////
@@ -43,6 +81,4 @@ function Pulley(config, options) {
 
 //////////////////////////////////////////////////
 
-const pulley = new Pulley();
-
-pulley.boot();
+module.exports = Pulley;

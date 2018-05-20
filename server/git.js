@@ -1,37 +1,11 @@
 'use strict';
-
-const fs = require('fs');
 const async = require('async');
 const rimraf = require('rimraf');
 const uuidv4 = require('uuid/v4');
 const nodegit = require('nodegit');
 const barrkeep = require('barrkeep');
 
-const testProject = {
-  _id: uuidv4(),
-  type: 'git',
-  name: 'vcsi',
-  origin: 'git@github.com:mdbarr/pulley-test.git',
-  method: 'ssh',
-  credentials: {
-    type: 'key',
-    publicKey: fs.readFileSync(process.env.HOME + '/.ssh/id_rsa.pub').toString(),
-    privateKey: fs.readFileSync(process.env.HOME + '/.ssh/id_rsa').toString(),
-    passphrase: ''
-  },
-  path: '/tmp/pulley-test',
-  git: '/tmp/pulley-test/.git',
-  webhook: {
-    path: `/api/webhooks/${ uuidv4() }`,
-    secret: uuidv4(),
-    authenticate: false
-  },
-  rules: {},
-  repository: null,
-  progress: 1
-};
-
-function cloneRepository(project) {
+function cloneRepository(project, callback) {
   try {
     rimraf.sync(project.path);
   } catch (error) {
@@ -42,10 +16,7 @@ function cloneRepository(project) {
     fetchOpts: {
       callbacks: {
         credentials: function(repo, user) {
-          return nodegit.Cred.sshKeyMemoryNew(user,
-                                              project.credentials.publicKey,
-                                              project.credentials.privateKey,
-                                              project.credentials.passphrase);
+          return credentials(project, user);
         },
         transferProgress: function(progress) {
           project.progress = progress.receivedObjects() / progress.totalObjects();
@@ -57,18 +28,18 @@ function cloneRepository(project) {
     then(function(repository) {
       project.repository = repository;
       project.progress = 1;
-      return project;
+      callback(null, project);
+    }).
+    catch(function(error) {
+      callback(error);
     });
 }
 
-function updateRepository(project) {
+function updateRepository(project, callback) {
   return project.repository.fetch('origin', {
     callbacks: {
       credentials: function(repo, user) {
-        return nodegit.Cred.sshKeyMemoryNew(user,
-                                            project.credentials.publicKey,
-                                            project.credentials.privateKey,
-                                            project.credentials.passphrase);
+        return credentials(project, user);
       },
       transferProgress: function(progress) {
         project.progress = progress.receivedObjects() / progress.totalObjects();
@@ -78,7 +49,21 @@ function updateRepository(project) {
   }).
     then(function() {
       project.progress = 1;
-      return project;
+      callback(null, project);
+    }).
+    catch(function(error) {
+      callback(error);
+    });
+}
+
+function openRepository(project, callback) {
+  nodegit.Repository.open(project.gitPath).
+    then(function(repo) {
+      project.repository = repo;
+      callback(null, project);
+    }).
+    catch(function(error) {
+      callback(error);
     });
 }
 
@@ -251,8 +236,37 @@ function generateChangeset(repository, sourceBranch, targetBranch) {
     });
 }
 
+function credentials(project, user) {
+  switch (project.credentials.type) {
+    case 'key':
+      return project.creds = nodegit.Cred.sshKeyMemoryNew(user,
+                                                        project.credentials.publicKey,
+                                                        project.credentials.privateKey,
+                                                        project.credentials.passphrase);
+    case 'local-key':
+    default:
+      return project.creds = nodegit.Cred.sshKeyNew(user,
+                                                  project.credentials.publicKey,
+                                                  project.credentials.privateKey,
+                                                  project.credentials.passphrase);
+
+  }
+}
+
 //////////
 
+module.exports = {
+  cloneRepository,
+  createReview,
+  credentials,
+  generateChangeset,
+  openRepository,
+  updateRepository
+};
+
+//////////
+
+/*
 cloneRepository(testProject).
   then(function(project) {
     return updateRepository(project);
@@ -266,3 +280,4 @@ cloneRepository(testProject).
   catch(function(error) {
     console.log(error);
   });
+*/
