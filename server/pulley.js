@@ -37,7 +37,9 @@ const defaults = {
       privateKey: path.join(process.env.HOME, '.ssh/id_rsa'),
       passphrase: ''
     }
-  }
+  },
+
+  silent: false
 };
 
 ////////////////////////////////////////////////
@@ -54,6 +56,9 @@ function Pulley(config) {
   ////////////////////
 
   self.store = require('./datastore')(self);
+  self.events = require('./events')(self);
+
+  self.git = require('./git')(self);
 
   self.api = require('./apiServer')(self);
   self.smtp = require('./smtpServer')(self);

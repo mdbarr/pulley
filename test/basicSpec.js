@@ -1,7 +1,5 @@
 'use strict';
 
-const should = require('should');
-
 const Pulley = require('../server/pulley');
 
 describe('Basic Spec', function() {
@@ -15,9 +13,11 @@ describe('Basic Spec', function() {
   });
 
   it('should create and verify a new instance of Pulley', function() {
-    pulley = new Pulley();
+    pulley = new Pulley({
+      silent: true
+    });
 
-    pulley.should.have.property('config')
+    pulley.should.have.property('config');
 
     pulley.should.have.property('store');
     pulley.store.should.be.instanceOf(Object);
@@ -37,9 +37,21 @@ describe('Basic Spec', function() {
       origin: 'git@github.com:mdbarr/pulley-test.git'
     };
 
-    pulley.store.createProject(testProject, function(err, proj) {
-      project = proj;
-      done();
+    pulley.store.createProject(testProject, function(error, proj) {
+      if (error) {
+        return done(error);
+      } else {
+        project = proj;
+        done();
+      }
     });
+  });
+
+  it('should verify the project repository clone', function() {
+    project.should.have.property('progress', 100);
+
+    project.should.have.property('branches');
+    project.branches.should.be.instanceOf(Array);
+    project.branches.should.not.have.length(0);
   });
 });

@@ -1,6 +1,5 @@
 'use strict';
 
-const git = require('./git');
 const path = require('path');
 
 function Project(pulley, {
@@ -32,7 +31,12 @@ function Project(pulley, {
   self.repository = null;
   self.progress = 0;
 
-  //self.pulley = pulley;
+  //////////
+  Object.defineProperty(self, '_pulley', {
+    value: pulley,
+    enumerable: false,
+    writable: false
+  });
 
   return self;
 };
@@ -57,7 +61,7 @@ Project.prototype.cloneRepository = function(callback) {
   switch (this.type) {
     case 'git':
     default:
-      return git.cloneRepository(this, callback);
+      return this._pulley.git.cloneRepository(this, callback);
   }
 };
 
@@ -65,7 +69,7 @@ Project.prototype.openRepository = function(callback) {
   switch (this.type) {
     case 'git':
     default:
-      return git.openRepository(this, callback);
+      return this._pulley.git.openRepository(this, callback);
   }
 };
 
@@ -73,7 +77,7 @@ Project.prototype.updateRepository = function(callback) {
   switch (this.type) {
     case 'git':
     default:
-      return git.updateRepository(this, callback);
+      return this._pulley.git.updateRepository(this, callback);
   }
 };
 

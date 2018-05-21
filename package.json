@@ -8,11 +8,11 @@
   "scripts": {
     "build": "node build/build.js",
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
-    "fix": "eslint --fix --ext .js,.vue src server || true",
-    "lint": "eslint --ext .js,.vue src server || true",
+    "fix": "eslint --fix --ext .js,.vue src server test || true",
+    "lint": "eslint --ext .js,.vue src server test || true",
     "server": "./server/index.js",
     "start": "npm run dev",
-    "test": "mocha"
+    "test": "mocha --opts ./test/.mocha.opts"
   },
   "dependencies": {
     "async": "^2.6.0",

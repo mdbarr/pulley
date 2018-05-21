@@ -19,6 +19,9 @@ function MemoryStore(pulley) {
 
   self.createProject = function(options, callback) {
     return new Project(pulley, options).cloneRepository(function(err, project) {
+      if (err) {
+        return callback(err);
+      }
       self.projects[project.name] = project;
       callback(err, project);
     });

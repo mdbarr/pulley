@@ -51,7 +51,9 @@ function ApiServer(pulley) {
 
   self.boot = function(callback) {
     pulley.apiServer.listen(pulley.config.api.port, function() {
-      console.log(`Pulley API Server running on ${ pulley.config.api.port }`);
+      if (!pulley.config.silent) {
+        console.log(`Pulley API Server running on ${ pulley.config.api.port }`);
+      }
       if (callback) {
         callback(null);
       }

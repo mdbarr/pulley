@@ -1,63 +1,96 @@
 'use strict';
+
 const async = require('async');
 const rimraf = require('rimraf');
-const uuidv4 = require('uuid/v4');
 const nodegit = require('nodegit');
 const barrkeep = require('barrkeep');
 
-function cloneRepository(project, callback) {
-  try {
-    rimraf.sync(project.path);
-  } catch (error) {
-    console.log('cleanup error', error);
-  }
+////////////////////////////////////////
 
-  return nodegit.Clone(project.origin, project.path, {
-    fetchOpts: {
-      callbacks: {
-        credentials: function(repo, user) {
-          return credentials(project, user);
-        },
-        transferProgress: function(progress) {
-          project.progress = progress.receivedObjects() / progress.totalObjects();
-          //console.log('progress', progress.receivedObjects(), progress.totalObjects());
+function branchFilter(refs) {
+  return refs.filter(ref => ref.startsWith('refs/remotes/')).
+    map(branch => branch.replace(/^refs\/remotes\//, ''));
+}
+
+function calculateProgress(progress) {
+  let percent = progress.receivedObjects() / progress.totalObjects();
+  percent = Math.floor(percent * 100);
+  percent = Math.min(percent, 99);
+
+  return percent;
+}
+
+////////////////////////////////////////
+
+function Git(pulley) {
+  const self = this;
+
+  self.cloneRepository = function(project, callback) {
+    try {
+      rimraf.sync(project.path);
+    } catch (error) {
+      console.log('cleanup error', error);
+    }
+
+    return nodegit.Clone(project.origin, project.path, {
+      fetchOpts: {
+        callbacks: {
+          credentials: function(repo, user) {
+            return self.credentials(project, user);
+          },
+          transferProgress: function(progress) {
+            project.progress = calculateProgress(progress);
+          }
         }
       }
-    }
-  }).
+    }).
     then(function(repository) {
       project.repository = repository;
-      project.progress = 1;
+      return nodegit.Reference.list(repository);
+    }).
+    then(function(refs) {
+      const branches = branchFilter(refs);
+      project.branches = branches;
+
+      project.progress = 100;
       callback(null, project);
     }).
     catch(function(error) {
       callback(error);
     });
-}
+  };
 
-function updateRepository(project, callback) {
-  return project.repository.fetch('origin', {
-    callbacks: {
-      credentials: function(repo, user) {
-        return credentials(project, user);
-      },
-      transferProgress: function(progress) {
-        project.progress = progress.receivedObjects() / progress.totalObjects();
-        //console.log('progress', progress.receivedObjects(), progress.totalObjects());
+  self.updateRepository = function(project, callback) {
+    return project.repository.fetch('origin', {
+      callbacks: {
+        credentials: function(repo, user) {
+          return self.credentials(project, user);
+        },
+        transferProgress: function(progress) {
+          project.progress = calculateProgress(progress);
+        }
       }
-    }
-  }).
+    }).
     then(function() {
-      project.progress = 1;
+      return project.repository.refreshIndex();
+    }).
+    then(function() {
+      return nodegit.Reference.list(project.repository);
+    }).
+    then(function(refs) {
+      const branches = branchFilter(refs);
+      project.branches = branches;
+
+      project.progress = 100;
       callback(null, project);
     }).
     catch(function(error) {
       callback(error);
     });
-}
+  };
 
-function openRepository(project, callback) {
-  nodegit.Repository.open(project.gitPath).
+  self.openRepository = function(project, callback) {
+    nodegit.Repository.open(project.gitPath).
     then(function(repo) {
       project.repository = repo;
       callback(null, project);
@@ -65,44 +98,44 @@ function openRepository(project, callback) {
     catch(function(error) {
       callback(error);
     });
-}
-
-function createReview(project, sourceBranch, targetBranch, owner) {
-  const review = {
-    _id: uuidv4(),
-    project: project._id,
-    source: sourceBranch,
-    target: targetBranch,
-    owner: owner,
-    timestamp: Date.now(),
-    private: false,
-    state: 'in-review',
-    reviewers: [],
-    versions: []
   };
 
-  return generateChangeset(project.repository, sourceBranch, targetBranch).
+  self.createReview = function(project, sourceBranch, targetBranch, owner) {
+    const review = {
+      _id: pulley.store.generateId(),
+      project: project._id,
+      source: sourceBranch,
+      target: targetBranch,
+      owner: owner,
+      timestamp: Date.now(),
+      private: false,
+      state: 'in-review',
+      reviewers: [],
+      versions: []
+    };
+
+    return self.generateChangeset(project.repository, sourceBranch, targetBranch).
     then(function(changeset) {
       review.versions.push(changeset);
       return review;
     });
-}
-
-function generateChangeset(repository, sourceBranch, targetBranch) {
-  let sourceCommit;
-  let targetCommit;
-  let mergebase;
-  const commits = [];
-
-  const changeset = {
-    _id: uuidv4(),
-    sourceCommit: null,
-    targetCommit: null,
-    mergebase: null,
-    commits: null
   };
 
-  return repository.getBranchCommit(targetBranch).
+  self.generateChangeset = function(repository, sourceBranch, targetBranch) {
+    let sourceCommit;
+    let targetCommit;
+    let mergebase;
+    const commits = [];
+
+    const changeset = {
+      _id: pulley.store.generateId(),
+      sourceCommit: null,
+      targetCommit: null,
+      mergebase: null,
+      commits: null
+    };
+
+    return repository.getBranchCommit(targetBranch).
     then(function(firstCommitOnMaster) {
       targetCommit = firstCommitOnMaster;
       changeset.targetCommit = targetCommit.id().toString();
@@ -143,7 +176,7 @@ function generateChangeset(repository, sourceBranch, targetBranch) {
 
         async.map(commitList, function(commit, next) {
           const record = {
-            _id: uuidv4(),
+            _id: pulley.store.generateId(),
             commit: commit.sha(),
             author: commit.author().name() +
               ' <' + commit.author().email() + '>',
@@ -165,7 +198,7 @@ function generateChangeset(repository, sourceBranch, targetBranch) {
                         let patchChain = Promise.resolve();
                         for (const patch of patches) {
                           const patchRecord = {
-                            _id: uuidv4(),
+                            _id: pulley.store.generateId(),
                             previous: patch.oldFile().path(),
                             filename: patch.newFile().path(),
                             chunks: []
@@ -234,37 +267,31 @@ function generateChangeset(repository, sourceBranch, targetBranch) {
         });
       });
     });
-}
+  };
 
-function credentials(project, user) {
-  switch (project.credentials.type) {
-    case 'key':
-      return project.creds = nodegit.Cred.sshKeyMemoryNew(user,
+  self.credentials = function(project, user) {
+    switch (project.credentials.type) {
+      case 'key':
+        return project.creds = nodegit.Cred.sshKeyMemoryNew(user,
                                                         project.credentials.publicKey,
                                                         project.credentials.privateKey,
                                                         project.credentials.passphrase);
-    case 'local-key':
-    default:
-      return project.creds = nodegit.Cred.sshKeyNew(user,
+      case 'local-key':
+      default:
+        return project.creds = nodegit.Cred.sshKeyNew(user,
                                                   project.credentials.publicKey,
                                                   project.credentials.privateKey,
                                                   project.credentials.passphrase);
 
-  }
+    }
+  };
 }
 
-//////////
+////////////////////////////////////////
 
-module.exports = {
-  cloneRepository,
-  createReview,
-  credentials,
-  generateChangeset,
-  openRepository,
-  updateRepository
+module.exports = function(pulley) {
+  return new Git(pulley);
 };
-
-//////////
 
 /*
 cloneRepository(testProject).
