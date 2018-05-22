@@ -31,6 +31,8 @@ function Project(pulley, {
   self.repository = null;
   self.progress = 0;
 
+  self.reviews = [];
+
   //////////
   Object.defineProperty(self, '_pulley', {
     value: pulley,
@@ -86,6 +88,14 @@ Project.prototype.createReview = function(owner, branch, target, callback) {
     case 'git':
     default:
       return this._pulley.git.createReview(this, owner, branch, target, callback);
+  }
+};
+
+Project.prototype.updateReview = function(review, callback) {
+  switch (this.type) {
+    case 'git':
+    default:
+      return this._pulley.git.updateReview(this, review, callback);
   }
 };
 

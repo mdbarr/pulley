@@ -63,9 +63,27 @@ describe('Basic Spec', function() {
       } else {
         review = rev;
         review.should.be.ok();
-        console.pp(review);
+
         done();
       }
+    });
+  });
+
+  it('should update the review mimicking a new commit', function(done) {
+    review.source = 'origin/two-ahead'; // hack to advance the HEAD
+
+    project.updateReview(review, function(error, updated) {
+
+      done(error, updated);
+    });
+  });
+
+  it('should update the review mimicking a rebase', function(done) {
+    review.source = 'origin/two-ahead-rebase'; // hack to advance the HEAD
+
+    project.updateReview(review, function(error, updated) {
+
+      done(error, updated);
     });
   });
 });

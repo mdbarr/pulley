@@ -103,21 +103,17 @@ function Git(pulley) {
 
   self.createReview = function(project, owner, sourceBranch, targetBranch, callback) {
     const review = pulley.models.review({
-      project: project._id,
+      project: project,
       source: sourceBranch,
       target: targetBranch,
       owner: owner,
       hidden: false
     });
 
-    return self.generateBranchChangeset(project.repository, sourceBranch, targetBranch).
+    return self.generateReviewChangeset(review, project.repository, sourceBranch, targetBranch).
       then(function(changeset) {
-        review.versions.push(changeset);
-
-        changeset.commits.forEach(function(commit) {
-          review.commits.list.push(commit.commit);
-          review.commits.versions[commit.commit] = 0; // review version
-        });
+        review.head = changeset.sourceCommit;
+        review.versions.unshift(changeset);
 
         return callback(null, review);
       }).
@@ -126,7 +122,29 @@ function Git(pulley) {
       });
   };
 
-  self.generateBranchChangeset = function(repository, sourceBranch, targetBranch) {
+  self.updateReview = function(project, review, callback) {
+    return project.repository.getBranchCommit(review.source).
+      then(function(currentHead) {
+        if (currentHead.sha() === review.head) {
+          callback(null, review); // no-op
+        } else {
+          self.generateReviewChangeset(review, project.repository).
+            then(function(changeset) {
+              review.head = changeset.sourceCommit;
+              review.versions.unshift(changeset);
+
+              review.updated = Date.now();
+
+              callback(null, review);
+            });
+        }
+      }).
+      catch(function(error) {
+        callback(error);
+      });
+  };
+
+  self.generateReviewChangeset = function(review, repository) {
     let sourceCommit;
     let targetCommit;
     let mergebase;
@@ -134,9 +152,9 @@ function Git(pulley) {
     let targetTree;
     const commits = [];
 
-    const changeset = pulley.models.changeset();
+    const changeset = pulley.models.changeset(review);
 
-    return repository.getBranchCommit(targetBranch).
+    return repository.getBranchCommit(review.target).
       then(function(firstCommitOnMaster) {
         targetCommit = firstCommitOnMaster;
         changeset.targetCommit = targetCommit.id().toString();
@@ -144,7 +162,7 @@ function Git(pulley) {
       }).
       then(function(tree) {
         targetTree = tree;
-        return repository.getBranchCommit(sourceBranch);
+        return repository.getBranchCommit(review.source);
       }).
       then(function(firstCommitOnBranch) {
         sourceCommit = firstCommitOnBranch;
@@ -191,7 +209,11 @@ function Git(pulley) {
         return new Promise(function(resolve, reject) {
 
           async.map(commitList, function(commit, next) {
-            const record = pulley.models.record(commit);
+            if (review.commits[commit.sha()]) {
+              return next(null, commit.sha());
+            }
+
+            const change = pulley.models.change(commit);
 
             commit.getDiff().
               then(function(diffList) {
@@ -203,29 +225,29 @@ function Git(pulley) {
                         then(function(patches) {
                           let patchChain = Promise.resolve();
                           for (const patch of patches) {
-                            const patchRecord = {
+                            const patchChange = {
                               _id: pulley.store.generateId(),
                               previous: patch.oldFile().path(),
                               filename: patch.newFile().path(),
                               chunks: []
                             };
-                            record.files.add(patchRecord.filename);
-                            record.patches.push(patchRecord);
+                            change.files.add(patchChange.filename);
+                            change.patches.push(patchChange);
                             patchChain = patchChain.
                               then(function() {
                                 return patch.hunks().
                                   then(function(hunks) {
                                     let hunkChain = Promise.resolve();
                                     for (const hunk of hunks) {
-                                      const hunkRecord = {
+                                      const hunkChange = {
                                         header: hunk.header().trim(),
                                         lines: []
                                       };
-                                      patchRecord.chunks.push(hunkRecord);
+                                      patchChange.chunks.push(hunkChange);
                                       hunkChain = hunkChain.then(function() {
                                         return hunk.lines().then(function(lines) {
                                           lines.forEach(function(line) {
-                                            hunkRecord.lines.push(
+                                            hunkChange.lines.push(
                                               String.fromCharCode(line.origin()) +
                                                 line.content().trimRight());
                                           });
@@ -242,19 +264,19 @@ function Git(pulley) {
                 }
                 return diffChain.
                   then(function() {
-                    record.fingerprint = barrkeep.getSHA1Hex(record.patches);
-                    record.files = Array.from(record.files);
-                    record.blobs = {};
+                    change.fingerprint = barrkeep.getSHA1Hex(change.patches);
+                    change.files = Array.from(change.files);
+                    change.blobs = {};
 
                     let entryChain = Promise.resolve();
-                    for (const file of record.files) {
+                    for (const file of change.files) {
                       entryChain = entryChain.then(function() {
                         return sourceCommit.getEntry(file).
                           then(function(entry) {
                             return entry.getBlob().
                               then(function(blob) {
                                 const binary = !!blob.isBinary();
-                                record.blobs[file] = {
+                                change.blobs[file] = {
                                   binary: binary,
                                   content: binary ? blob.content() : blob.toString(),
                                   type: mime.lookup(file)
@@ -266,7 +288,8 @@ function Git(pulley) {
                     return entryChain;
                   }).
                   then(function() {
-                    next(null, record);
+                    review.commits[change.commit] = change;
+                    next(null, change.commit);
                   }).
                   catch(function(error) {
                     next(error);

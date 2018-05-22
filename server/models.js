@@ -6,30 +6,35 @@ function Models(pulley) {
   self.review = function({
     project, source, target, owner, hidden
   }) {
+    const timestamp = Date.now();
+
     const model = {
       _id: pulley.store.generateId(),
-      project,
+      rId: project.reviews.length + 1,
+      project: project._id,
       source,
       target,
+      head: null,
       owner,
-      timestamp: Date.now(),
+      created: timestamp,
+      updated: timestamp,
       hidden,
       state: 'draft',
       reviewers: [],
-      commits: {
-        list: [],
-        versions: {},
-        remaps: {}
-      },
+      commits: {},
       versions: []
     };
+
+    project.reviews.unshift(model);
 
     return model;
   };
 
-  self.changeset = function() {
+  self.changeset = function(review) {
     const model = {
       _id: pulley.store.generateId(),
+      review: review._id,
+      version: review.versions.length + 1,
       sourceCommit: null,
       targetCommit: null,
       mergebase: null,
@@ -40,7 +45,7 @@ function Models(pulley) {
     return model;
   };
 
-  self.record = function(commit) {
+  self.change = function(commit) {
     const model = {
       _id: pulley.store.generateId(),
       commit: commit.sha(),
