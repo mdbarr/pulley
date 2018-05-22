@@ -5,6 +5,7 @@ const Pulley = require('../server/pulley');
 describe('Basic Spec', function() {
   let pulley;
   let project;
+  let review;
 
   after(function() {
     if (pulley) {
@@ -53,5 +54,18 @@ describe('Basic Spec', function() {
     project.should.have.property('branches');
     project.branches.should.be.instanceOf(Array);
     project.branches.should.not.have.length(0);
+  });
+
+  it('should create a new review', function(done) {
+    project.createReview('pulley', 'origin/one-ahead', 'origin/master', function(error, rev) {
+      if (error) {
+        done(error);
+      } else {
+        review = rev;
+        review.should.be.ok();
+        console.pp(review);
+        done();
+      }
+    });
   });
 });

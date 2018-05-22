@@ -81,4 +81,12 @@ Project.prototype.updateRepository = function(callback) {
   }
 };
 
+Project.prototype.createReview = function(owner, branch, target, callback) {
+  switch (this.type) {
+    case 'git':
+    default:
+      return this._pulley.git.createReview(this, owner, branch, target, callback);
+  }
+};
+
 module.exports = Project;
