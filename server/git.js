@@ -102,23 +102,13 @@ function Git(pulley) {
   };
 
   self.createReview = function(project, owner, sourceBranch, targetBranch, callback) {
-    const review = {
-      _id: pulley.store.generateId(),
+    const review = pulley.models.review({
       project: project._id,
       source: sourceBranch,
       target: targetBranch,
       owner: owner,
-      timestamp: Date.now(),
-      private: false,
-      state: 'in-review',
-      reviewers: [],
-      commits: {
-        list: [],
-        versions: {},
-        remaps: {}
-      },
-      versions: []
-    };
+      hidden: false
+    });
 
     return self.generateBranchChangeset(project.repository, sourceBranch, targetBranch).
       then(function(changeset) {
@@ -144,14 +134,7 @@ function Git(pulley) {
     let targetTree;
     const commits = [];
 
-    const changeset = {
-      _id: pulley.store.generateId(),
-      sourceCommit: null,
-      targetCommit: null,
-      mergebase: null,
-      diff: null,
-      commits: null
-    };
+    const changeset = pulley.models.changeset();
 
     return repository.getBranchCommit(targetBranch).
       then(function(firstCommitOnMaster) {
@@ -208,17 +191,7 @@ function Git(pulley) {
         return new Promise(function(resolve, reject) {
 
           async.map(commitList, function(commit, next) {
-            const record = {
-              _id: pulley.store.generateId(),
-              commit: commit.sha(),
-              author: commit.author().name() +
-                ' <' + commit.author().email() + '>',
-              date: new Date(commit.date()).getTime(),
-              message: commit.message(),
-              fingerprint: null,
-              files: new Set(),
-              patches: []
-            };
+            const record = pulley.models.record(commit);
 
             commit.getDiff().
               then(function(diffList) {

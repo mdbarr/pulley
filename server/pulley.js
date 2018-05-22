@@ -56,6 +56,7 @@ function Pulley(config) {
   ////////////////////
 
   self.store = require('./datastore')(self);
+  self.models = require('./models')(self);
   self.events = require('./events')(self);
 
   self.git = require('./git')(self);
