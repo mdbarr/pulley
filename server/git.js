@@ -4,7 +4,6 @@ const async = require('async');
 const rimraf = require('rimraf');
 const mime = require('mime-types');
 const nodegit = require('nodegit');
-const barrkeep = require('barrkeep');
 
 ////////////////////////////////////////
 
@@ -30,7 +29,7 @@ function Git(pulley) {
     try {
       rimraf.sync(project.path);
     } catch (error) {
-      console.log('cleanup error', error);
+      return callback(error);
     }
 
     return nodegit.Clone(project.origin, project.path, {
@@ -184,6 +183,13 @@ function Git(pulley) {
         mergebase = base;
         changeset.mergebase = mergebase.toString();
 
+        return nodegit.Merge.commits(repository, targetCommit, sourceCommit);
+      }).
+      then(function(mergeIndex) {
+        review.mergeable = changeset.mergeable = !mergeIndex.hasConflicts();
+        return mergeIndex.clear();
+      }).
+      then(function() {
         return new Promise(function(resolve) {
           let done = false;
           const history = sourceCommit.history();
@@ -264,7 +270,7 @@ function Git(pulley) {
                 }
                 return diffChain.
                   then(function() {
-                    change.fingerprint = barrkeep.getSHA1Hex(change.patches);
+                    change.fingerprint = pulley.util.computeHash(change.patches);
                     change.files = Array.from(change.files);
                     change.blobs = {};
 
@@ -307,6 +313,37 @@ function Git(pulley) {
       });
   };
 
+  self.isMergeable = function(review, repository, callback) {
+    let targetCommit;
+    let sourceCommit;
+
+    const changeset = review.versions[0];
+    if (!changeset) {
+      return callback(new Error('no versions in review'));
+    }
+
+    return repository.getBranchCommit(review.target).
+      then(function(firstCommitOnMaster) {
+        targetCommit = firstCommitOnMaster;
+        changeset.targetCommit = targetCommit.id().toString();
+        return repository.getBranchCommit(review.source);
+      }).
+      then(function(firstCommitOnBranch) {
+        sourceCommit = firstCommitOnBranch;
+        return nodegit.Merge.commits(repository, targetCommit, sourceCommit);
+      }).
+      then(function(mergeIndex) {
+        review.mergeable = changeset.mergeable = !mergeIndex.hasConflicts();
+        return mergeIndex.clear();
+      }).
+      then(function() {
+        callback(null, review.mergeable);
+      }).
+      catch(function(error) {
+        callback(error);
+      });
+  };
+
   self.credentials = function(project, user) {
     switch (project.credentials.type) {
       case 'key':
@@ -330,19 +367,3 @@ function Git(pulley) {
 module.exports = function(pulley) {
   return new Git(pulley);
 };
-
-/*
-  cloneRepository(testProject).
-  then(function(project) {
-  return updateRepository(project);
-  }).
-  then(function(project) {
-  return createReview(project, 'origin/master', 'origin/master', process.env.USER);
-  }).
-  then(function(review) {
-  console.pp(review);
-  }).
-  catch(function(error) {
-  console.log(error);
-  });
-*/

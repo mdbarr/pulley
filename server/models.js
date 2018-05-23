@@ -38,6 +38,7 @@ function Models(pulley) {
       sourceCommit: null,
       targetCommit: null,
       mergebase: null,
+      mergeable: false,
       diff: null,
       commits: null
     };

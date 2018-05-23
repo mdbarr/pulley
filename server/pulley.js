@@ -53,16 +53,21 @@ function Pulley(config) {
 
   self.config = Object.assign(defaults, config);
 
+  self.util = require('./util')(self);
+  self.util.generateLocalPassword();
+
   ////////////////////
 
   self.store = require('./datastore')(self);
+
+  self.api = require('./apiServer')(self);
+  self.smtp = require('./smtpServer')(self);
+
+  self.roles = require('./roles')(self);
   self.models = require('./models')(self);
   self.events = require('./events')(self);
 
   self.git = require('./git')(self);
-
-  self.api = require('./apiServer')(self);
-  self.smtp = require('./smtpServer')(self);
 
   ////////////////////
 
