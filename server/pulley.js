@@ -15,6 +15,7 @@ const defaults = {
   email: {
     incoming: {
       enabled: true,
+      domain: 'pulley.blue',
       port: 25
     },
     outgoing: {
@@ -49,11 +50,10 @@ function Pulley(config) {
 
   ////////////////////
 
-  self.version = require('../package.json').version;
-
-  self.config = Object.assign(defaults, config);
-
   self.util = require('./util')(self);
+
+  self.version = require('../package.json').version;
+  self.config = Object.merge(defaults, config);
   self.util.generateLocalPassword();
 
   ////////////////////
@@ -82,6 +82,9 @@ function Pulley(config) {
   self.shutdown = function() {
     if (self.apiServer) {
       self.apiServer.close();
+    }
+    if (self.smtpServer) {
+      self.smtpServer.close();
     }
   };
 

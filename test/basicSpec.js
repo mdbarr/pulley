@@ -15,7 +15,12 @@ describe('Basic Spec', function() {
 
   it('should create and verify a new instance of Pulley', function() {
     pulley = new Pulley({
-      silent: true
+      silent: true,
+      email: {
+        incoming: {
+          port: 2525
+        }
+      }
     });
 
     pulley.should.have.property('config');
