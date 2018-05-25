@@ -62,6 +62,23 @@ function Models(pulley) {
     return model;
   };
 
+  self.user = function({
+    username, name, email, avatar, preferences, roles
+  }) {
+    const model = {
+      _id: pulley.store.generateId(),
+      created: pulley.util.timestamp(),
+      username,
+      name,
+      email,
+      avatar,
+      preferences: preferences || {},
+      roles: roles || []
+    };
+
+    return model;
+  };
+
   return self;
 }
 

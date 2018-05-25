@@ -9,6 +9,7 @@ function MemoryStore(pulley) {
 
   self.engine = 'memory';
 
+  self.users = {};
   self.projects = {};
 
   self.load = function() {};
@@ -25,6 +26,10 @@ function MemoryStore(pulley) {
       self.projects[project.name] = project;
       callback(err, project);
     });
+  };
+
+  self.createUser = function(options, callback) {
+    callback(null);
   };
 
   //////////
