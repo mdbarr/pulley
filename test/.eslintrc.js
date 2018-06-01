@@ -9,6 +9,9 @@ module.exports = {
     "mocha": true
   },
   "globals": {
+    "Client": true,
+    "pulley": true,
+    "validation": true
   },
   "rules": {
     "no-empty": ["error", {

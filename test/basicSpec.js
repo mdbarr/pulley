@@ -1,40 +1,23 @@
 'use strict';
 
-const Pulley = require('../server/pulley');
-
 describe('Basic Spec', function() {
-  let pulley;
+  /*
   let project;
   let review;
+  */
 
-  after(function() {
-    if (pulley) {
-      pulley.shutdown();
-    }
-  });
-
-  it('should create and verify a new instance of Pulley', function() {
-    pulley = new Pulley({
-      silent: true,
-      email: {
-        incoming: {
-          port: 2525
-        }
-      }
-    });
-
+  it('should verify a running instance of Pulley', function() {
     pulley.should.have.property('config');
 
     pulley.should.have.property('store');
     pulley.store.should.be.instanceOf(Object);
     pulley.store.should.have.property('engine');
     pulley.store.engine.should.equal('memory');
+
+    return validation.ok();
   });
 
-  it('should boot pulley', function(done) {
-    pulley.boot(done);
-  });
-
+  /*
   it('should create a test project', function(done) {
     this.timeout(60000);
 
@@ -91,4 +74,5 @@ describe('Basic Spec', function() {
       done(error, updated);
     });
   });
+  */
 });

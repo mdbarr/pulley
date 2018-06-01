@@ -25,27 +25,17 @@ function ApiServer(pulley) {
     res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST, PUT');
     res.header('Access-Control-Allow-Headers', 'Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization');
 
-    res.header(pulley.options.name + '-version', pulley.version);
+    res.header(pulley.config.name + '-version', pulley.version);
 
-    if (!pulley.options.silent) {
+    if (!pulley.config.silent) {
       //pulley.util.logger(req);
     }
     next();
   });
 
-  pulley.placeHolder = function(req, res, next) {
-    console.log('%s: %s %s', 'UNIMPLEMENTED ENDPOINT',
-                req.method, req.url);
-
-    res.send(200, {
-      message: 'placeholder'
-    });
-    next();
-  };
-
   ////////////////////
 
-  pulley.apiServer.get('/api', pulley.placeHolder);
+  pulley.apiServer.get('/api', pulley.util.placeHolder);
 
   ////////////////////
 

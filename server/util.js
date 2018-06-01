@@ -2,14 +2,21 @@
 
 const os = require('os');
 const crypto = require('crypto');
+const uuidv4 = require('uuid/v4');
 
 const barrkeep = require('barrkeep');
 
 function Util(pulley) {
   const self = this;
 
+  self.noop = () => undefined;
+
   self.clone = barrkeep.deepClone;
   self.merge = barrkeep.merge;
+
+  self.generateId = function() {
+    return uuidv4();
+  };
 
   self.computeHash = function(input, hash = 'sha1') {
     if (typeof input !== 'string') {
@@ -36,6 +43,17 @@ function Util(pulley) {
     if (callback) {
       setTimeout(() => callback(error, data), 0);
     }
+  };
+
+  self.placeHolder = function(req, res, next) {
+    console.log('%s: %s %s', 'UNIMPLEMENTED ENDPOINT'.rgb('#005fd7'),
+                req.method, req.url);
+
+    res.send(200, {
+      message: 'placeholder'
+    });
+
+    next();
   };
 
   return self;

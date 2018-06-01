@@ -3,10 +3,12 @@
 function Users(pulley) {
   const self = this;
 
-  self.create = function(options, callback) {
-    const user = pulley.model.user(options);
+  self.createUser = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
 
-    callback(null, user);
+    const user = pulley.models.user({});
+
+    context.send(200, user);
   };
 
   return self;

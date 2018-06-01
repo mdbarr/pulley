@@ -27,7 +27,10 @@ const defaults = {
   plugins: {},
 
   datastore: {
-    engine: 'memory'
+    engine: 'memory',
+    database: 'pulley',
+    user: 'pulley',
+    password: 'pulley'
   },
 
   git: {
@@ -45,7 +48,7 @@ const defaults = {
 
 ////////////////////////////////////////////////
 
-function Pulley(config) {
+function Pulley(config = {}) {
   const self = this;
 
   ////////////////////
@@ -63,11 +66,17 @@ function Pulley(config) {
   self.api = require('./apiServer')(self);
   self.smtp = require('./smtpServer')(self);
 
+  self.auth = require('./auth')(self);
+
   self.roles = require('./roles')(self);
   self.models = require('./models')(self);
   self.events = require('./events')(self);
 
   self.git = require('./git')(self);
+
+  self.users = require('./users')(self);
+  self.projects = require('./projects')(self);
+  self.reviews = require('./reviews')(self);
 
   ////////////////////
 

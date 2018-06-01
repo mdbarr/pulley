@@ -1,3 +1,4 @@
+--async-only
 --require should
 --ui bdd
 --timeout 30000

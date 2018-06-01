@@ -25,6 +25,8 @@ function calculateProgress(progress) {
 function Git(pulley) {
   const self = this;
 
+  const repositories = {};
+
   self.cloneRepository = function(project, callback) {
     try {
       rimraf.sync(project.path);
@@ -45,6 +47,8 @@ function Git(pulley) {
       }
     }).
       then(function(repository) {
+        repositories[project.origin] = repository;
+
         project.repository = repository;
         return nodegit.Reference.list(repository);
       }).

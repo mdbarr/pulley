@@ -8,8 +8,8 @@
   "scripts": {
     "build": "node build/build.js",
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
-    "fix": "eslint --fix --ext .js,.vue src server test || true",
     "lint": "eslint --cache --ext .js,.vue src server test || true",
+    "lint:fix": "eslint --fix --ext .js,.vue src server test || true",
     "precommit": "eslint --cache --ext .js,.vue src server test && mocha --opts ./test/.mocha.opts",
     "server": "./server/index.js",
     "start": "npm run dev",
