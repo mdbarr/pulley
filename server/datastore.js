@@ -8,7 +8,7 @@ function DataStore(pulley) {
   const self = this;
 
   const expectations = {
-    tables: [ 'pulley', 'organizations', 'projects', 'users', 'groups' ], // define
+    tables: [ 'configuration', 'organizations', 'projects', 'users', 'groups' ], // define
     methods: [ 'add', 'find', 'query', 'remove', 'update' ], // implement
     providers: [ 'engine', 'generateId', 'id', 'timestamp' ] // provide
   };
@@ -57,36 +57,39 @@ function DataStore(pulley) {
     }
   }
 
-  const _engine = parseEngine();
+  function generateWrappers() {
+    for (const name of expectations.tables) {
+      const wrapper = {};
+      for (const method in store.methods) {
+        wrapper[method] = function() {
+          const reference = store.tables[name] || name;
+          const args = Array.prototype.slice.call(arguments);
+          args.unshift(reference);
+          return store.methods[method].apply(this, args);
+        };
+      }
+      store.wrappers[name] = wrapper;
+      self.table[name] = wrapper;
+      self[name] = wrapper;
+    }
+  }
 
   //////////
 
   self.id = self.generateId = pulley.util.generateId;
   self.timestamp = pulley.util.timestamp;
 
-  self.table = function(name) {
-    if (store.wrappers.name) {
-      return store.wrappers.name;
-    } else {
-      if (expectations.tables.includes(name)) {
-        const wrapper = {};
-        for (const method in store.methods) {
-          wrapper[method] = function() {
-            const reference = store.tables[name] || name;
-            const args = Array.prototype.slice.call(arguments);
-            args.unshift(reference);
-            return store.methods[method].apply(this, args);
-          };
-        }
-        store.wrappers[name] = wrapper;
-        return wrapper;
-      } else {
-        return undefined;
-      }
-    }
-  };
+  const _engine = parseEngine();
 
   //////////
+
+  self.table = function(name) {
+    if (store.wrappers[name]) {
+      return store.wrappers[name];
+    } else {
+      return undefined;
+    }
+  };
 
   self.load = function(callback) {
     _engine.load(function(error) {
@@ -94,7 +97,9 @@ function DataStore(pulley) {
         return callback(error);
       }
 
-      pulley.store.table('pulley').
+      generateWrappers();
+
+      pulley.store.configuration.
         find({
           configured: true
         }, function(error, result) {
@@ -121,9 +126,9 @@ function DataStore(pulley) {
             });
 
             async.parallel([
-              (next) => pulley.store.table('organizations').add(organization, next),
-              (next) => pulley.store.table('users').add(admin, next),
-              (next) => pulley.store.table('pulley').add({
+              (next) => pulley.store.organizations.add(organization, next),
+              (next) => pulley.store.users.add(admin, next),
+              (next) => pulley.store.configuration.add({
                 configured: true
               }, next)
             ], function(error, results) {
