@@ -74,6 +74,7 @@ function Pulley(config = {}) {
 
   self.git = require('./git')(self);
 
+  self.organizations = require('./organizations')(self);
   self.users = require('./users')(self);
   self.projects = require('./projects')(self);
   self.reviews = require('./reviews')(self);

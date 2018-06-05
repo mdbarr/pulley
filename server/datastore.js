@@ -2,6 +2,8 @@
 
 // pulley.store.table('test').find({}, function(err, result));
 
+const async = require('async');
+
 function DataStore(pulley) {
   const self = this;
 
@@ -95,21 +97,43 @@ function DataStore(pulley) {
       pulley.store.table('pulley').
         find({
           configured: true
-        }, function(err, result) {
-          if (err) {
-            return callback(err);
+        }, function(error, result) {
+          if (error) {
+            return callback(error);
           }
 
           if (result) {
             callback(null);
           } else {
-            console.log('Initial bootstrapping of Pulley');
+            console.log('Initial bootstrapping of Pulley...');
 
-            // Organization create
-            // User create
-            // Project create
+            const organization = pulley.models.organization({
+              name: 'Pulley',
+              description: 'Default Organization'
+            });
 
-            callback(null);
+            const admin = pulley.models.user({
+              username: 'admin',
+              password: pulley.config.localPassword,
+              organization: organization._id,
+              name: 'Administrator',
+              email: 'blackhole@pulley.blue'
+            });
+
+            async.parallel([
+              (next) => pulley.store.table('organizations').add(organization, next),
+              (next) => pulley.store.table('users').add(admin, next),
+              (next) => pulley.store.table('pulley').add({
+                configured: true
+              }, next)
+            ], function(error, results) {
+              if (!error) {
+                console.log('username: admin');
+                console.log('password: %s', admin.password);
+                console.log();
+              }
+              callback(error, results);
+            });
           }
         });
     });

@@ -5,6 +5,8 @@ const path = require('path');
 function Models(pulley) {
   const self = this;
 
+  ////////////////////
+  // Context
   self.context = function(request, response, next) {
     const timestamp = pulley.util.timestamp();
     const model = {
@@ -39,13 +41,32 @@ function Models(pulley) {
     return model;
   };
 
+  ////////////////////
+  // Organization
+  self.organization = function({
+    _id, created, name, description, logo
+  }) {
+    const model = {
+      _id: _id || pulley.store.generateId(),
+      created: created || pulley.util.timestamp(),
+      name,
+      description,
+      logo
+    };
+
+    return model;
+  };
+
+  ////////////////////
+  // User <- Organization
   self.user = function({
-    _id, created, username, password, name, email,
+    _id, created, organization, username, password, name, email,
     avatar, preferences, roles, token, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
       created: created || pulley.util.timestamp(),
+      organization,
       username,
       password,
       name,
@@ -60,16 +81,27 @@ function Models(pulley) {
     return model;
   };
 
+  ////////////////////
+  // Group <- Organization
+  self.group = function({}) {
+    const model = {};
+
+    return model;
+  };
+
+  ////////////////////
+  // Project <- Organization
   self.project = function({
-    _id, name, created, type, description,
+    _id, name, created, organization, type, description,
     origin, isRemote, repoName, localPath, gitPath,
     credentials, rules, webhook,
     users, groups, options, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
-      name: name || 'Unnamed Project',
+      name,
       created: created || Date.now(),
+      organization,
       type: type || 'git',
       description,
       origin,
@@ -85,7 +117,7 @@ function Models(pulley) {
     };
 
     model.repoName = repoName || path.basename(self.origin, '.git');
-    model.localPath = localPath || path.join(pulley.config.git.path, self.repoName);
+    model.localPath = localPath || path.join(pulley.config.git.path, organization, self.repoName);
     model.gitPath = gitPath || path.join(self.path, '.git');
 
     model.webhook = webhook || {
@@ -97,6 +129,8 @@ function Models(pulley) {
     return model;
   };
 
+  ////////////////////
+  // Review (Pull Request)
   self.review = function({
     project, source, target, owner, hidden
   }) {
@@ -124,6 +158,8 @@ function Models(pulley) {
     return model;
   };
 
+  ////////////////////
+  // Change Set <- Pull Request
   self.changeset = function(review) {
     const model = {
       _id: pulley.store.generateId(),
@@ -140,6 +176,8 @@ function Models(pulley) {
     return model;
   };
 
+  ////////////////////
+  // Commit <- Change Set <- Pull Request
   self.change = function(commit) {
     const model = {
       _id: pulley.store.generateId(),
