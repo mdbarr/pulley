@@ -52,7 +52,7 @@ function DataStore(pulley) {
     switch (pulley.config.datastore.engine) {
       case 'memory':
       default:
-        const MemoryStore = require('./stores/memory');
+        const MemoryStore = require('./stores/memory-store');
         return new MemoryStore(pulley, expectations, registration);
     }
   }

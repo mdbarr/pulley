@@ -33,6 +33,12 @@ const defaults = {
     password: 'pulley'
   },
 
+  cache: {
+    engine: 'memory',
+    sessionTTL: 86400000,
+    defaultTTL: 300000
+  },
+
   git: {
     path: '/tmp/',
     credentials: {
@@ -62,6 +68,7 @@ function Pulley(config = {}) {
   ////////////////////
 
   self.store = require('./datastore')(self);
+  self.cache = require('./cache')(self);
 
   self.api = require('./apiServer')(self);
   self.smtp = require('./smtpServer')(self);
@@ -95,6 +102,9 @@ function Pulley(config = {}) {
     }
     if (self.smtpServer) {
       self.smtpServer.close();
+    }
+    if (self.cache) {
+      self.cache.close();
     }
   };
 

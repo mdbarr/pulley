@@ -7,14 +7,6 @@ function MemoryStore(pulley, expectations, registration) {
 
   const tables = {};
 
-  function wrap(callback) {
-    return function(error, data) {
-      setTimeout(function() {
-        callback(error, data);
-      }, 0);
-    };
-  }
-
   function contains(container, subset) {
     if (subset._id && container._id !== subset._id) {
       return false;
@@ -34,7 +26,7 @@ function MemoryStore(pulley, expectations, registration) {
   };
 
   self.add = function(table, item, callback) {
-    callback = wrap(callback);
+    callback = pulley.util.callback(callback);
     item._id = item._id || pulley.store;
     // upsert check?
     table.reference[item._id] = item;
@@ -42,7 +34,7 @@ function MemoryStore(pulley, expectations, registration) {
   };
 
   self.find = function(table, find, callback) {
-    callback = wrap(callback);
+    callback = pulley.util.callback(callback);
 
     for (const item in table.reference) {
       if (contains(table.reference[item], find)) {
@@ -54,7 +46,7 @@ function MemoryStore(pulley, expectations, registration) {
   };
 
   self.query = function(table, query, callback) {
-    callback = wrap(callback);
+    callback = pulley.util.callback(callback);
     const results = [];
 
     for (const item in table.reference) {
@@ -67,7 +59,7 @@ function MemoryStore(pulley, expectations, registration) {
   };
 
   self.remove = function(table, record, callback) {
-    callback = wrap(callback);
+    callback = pulley.util.callback(callback);
 
     if (record._id) {
       delete table.reference[record._id];
@@ -85,7 +77,7 @@ function MemoryStore(pulley, expectations, registration) {
   };
 
   self.update = function(table, find, update, callback) {
-    callback = wrap(callback);
+    callback = pulley.util.callback(callback);
 
     self.find(table, find, function(err, item) {
       const updated = Object.assign(item, update);
@@ -113,7 +105,7 @@ function MemoryStore(pulley, expectations, registration) {
     */
 
   self.load = function(callback) {
-    callback = wrap(callback);
+    callback = pulley.util.callback(callback);
 
     for (const table of expectations.tables) {
       tables[table] = tables[table] || {};

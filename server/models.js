@@ -12,6 +12,8 @@ function Models(pulley) {
     const model = {
       requestId: pulley.store.generateId(),
       timestamp,
+      request,
+      response,
       next
     };
 
@@ -36,6 +38,20 @@ function Models(pulley) {
       });
 
       next(false);
+    };
+
+    return model;
+  };
+
+  ////////////////////
+  // Session
+  self.session = function({
+    _id, user, ttl
+  }) {
+    const model = {
+      _id: _id || pulley.store.generateId(),
+      user,
+      ttl: ttl || pulley.config.cache.sessionTTL
     };
 
     return model;

@@ -14,6 +14,7 @@ function ApiServer(pulley) {
   ////////////////////
 
   pulley.apiServer.use(restify.pre.sanitizePath());
+  pulley.apiServer.pre(restify.plugins.pre.dedupeSlashes());
   pulley.apiServer.use(restify.plugins.dateParser());
   pulley.apiServer.use(restify.plugins.queryParser());
   pulley.apiServer.use(restify.plugins.bodyParser());

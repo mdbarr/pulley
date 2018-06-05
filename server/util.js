@@ -39,6 +39,18 @@ function Util(pulley) {
     pulley.config.localPassword = pulley.config.localPassword || localPassword;
   };
 
+  self.callback = function(callback) {
+    if (callback) {
+      return function(error, data) {
+        setTimeout(function() {
+          callback(error, data);
+        }, 0);
+      };
+    } else {
+      return self.noop;
+    }
+  };
+
   self.done = function(callback, error, data) {
     if (callback) {
       setTimeout(() => callback(error, data), 0);

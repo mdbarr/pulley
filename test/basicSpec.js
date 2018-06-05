@@ -6,6 +6,8 @@ describe('Basic Spec', function() {
   let review;
   */
 
+  let client;
+
   it('should verify a running instance of Pulley', function() {
     pulley.should.have.property('config');
 
@@ -15,6 +17,18 @@ describe('Basic Spec', function() {
     pulley.store.engine.should.equal('memory');
 
     return validation.ok();
+  });
+
+  it('should crate a new client and login', function() {
+    client = new Client();
+
+    return client.post('/session', {
+      username: 'admin',
+      password: pulley.config.localPassword
+    }).
+      then(function(session) {
+        session.should.be.ok();
+      });
   });
 
   /*

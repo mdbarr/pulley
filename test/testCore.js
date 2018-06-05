@@ -6,13 +6,9 @@ const Pulley = require('../server/pulley');
 ////////////////////////////////////////////////////////////
 
 global.Client = function({
-  endpoint = 'http://localhost:2929/api/', token
-}) {
+  endpoint = 'http://localhost:2929/api', token
+} = {}) {
   const self = this;
-
-  if (!endpoint.endsWith('/')) {
-    endpoint += '/';
-  }
 
   const session = {
     jar: new request.jar(),
