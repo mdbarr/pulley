@@ -46,14 +46,29 @@ function Util(pulley) {
   };
 
   self.placeHolder = function(req, res, next) {
-    console.log('%s: %s %s', 'UNIMPLEMENTED ENDPOINT'.rgb('#005fd7'),
-                req.method, req.url);
-
+    if (!pulley.config.silent) {
+      console.log('%s: %s %s', 'UNIMPLEMENTED ENDPOINT'.rgb('#005fd7'),
+                  req.method, req.url);
+    }
     res.send(200, {
       message: 'placeholder'
     });
 
     next();
+  };
+
+  self.print = function() {
+    if (!pulley.config.silent) {
+      console.log.apply(this, arguments);
+    }
+  };
+
+  self.pp = self.pretty = function(object) {
+    if (!pulley.config.silent) {
+      console.pp(object, {
+        lineNumbers: true
+      });
+    }
   };
 
   return self;

@@ -110,7 +110,7 @@ function DataStore(pulley) {
           if (result) {
             callback(null);
           } else {
-            console.log('Initial bootstrapping of Pulley...');
+            pulley.util.print('Initial bootstrapping of Pulley...');
 
             const organization = pulley.models.organization({
               name: 'Pulley',
@@ -133,9 +133,9 @@ function DataStore(pulley) {
               }, next)
             ], function(error, results) {
               if (!error) {
-                console.log('username: admin');
-                console.log('password: %s', admin.password);
-                console.log();
+                pulley.util.print('username: admin');
+                pulley.util.print('password: %s', admin.password);
+                pulley.util.print();
               }
               callback(error, results);
             });

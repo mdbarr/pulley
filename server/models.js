@@ -27,7 +27,7 @@ function Models(pulley) {
 
     model.error = function(statusCode, message) {
       if (!pulley.config.silent) {
-        console.log('ERROR', message);
+        console.log('ERROR'.rgb('#bf2c30'), message);
       }
 
       response.send(statusCode, {
