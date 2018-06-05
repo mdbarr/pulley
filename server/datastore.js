@@ -6,50 +6,52 @@ function DataStore(pulley) {
   const self = this;
 
   const expectations = {
-    tables: [ 'users', 'groups', 'projects' ],
-    methods: [ 'add', 'find', 'query', 'remove', 'update' ],
-    providers: [ 'engine', 'generateId', 'id', 'timestamp' ]
+    tables: [ 'pulley', 'organizations', 'projects', 'users', 'groups' ], // define
+    methods: [ 'add', 'find', 'query', 'remove', 'update' ], // implement
+    providers: [ 'engine', 'generateId', 'id', 'timestamp' ] // provide
   };
 
-  const tables = {};
-  let _default = null;
+  const store = {
+    tables: {},
+    methods: {},
+    wrappers: {}
+  };
+
+  //////////
+
+  const registration = {
+    define: function(options) {
+      const table = {
+        name: options.name,
+        reference: options.reference || null,
+        metadata: options.metadata || {}
+      };
+      store.tables[table.name] = table;
+      return table;
+    },
+
+    implement: function(name, value) {
+      if (expectations.methods.includes(name)) {
+        store.methods[name] = value;
+      }
+    },
+
+    provide: function(name, value) {
+      if (expectations.providers.includes(name)) {
+        self[name] = value;
+        return true;
+      } else {
+        return false;
+      }
+    }
+  };
 
   function parseEngine() {
     switch (pulley.config.datastore.engine) {
       case 'memory':
       default:
         const MemoryStore = require('./stores/memory');
-        return new MemoryStore(pulley, expectations, register, provide);
-    }
-  }
-
-  function register(options) {
-    const table = {
-      name: options.name,
-      reference: options.reference || null,
-      metadata: options.metadata || {}
-    };
-
-    for (const method of expectations.methods) {
-      table[method] = (object, callback) =>
-        options[method](table, object, callback);
-    }
-
-    tables[table.name] = table;
-
-    if (options._default || _default === null) {
-      _default = table;
-    }
-
-    return table;
-  }
-
-  function provide(name, value) {
-    if (expectations.providers.includes(name)) {
-      self[name] = value;
-      return true;
-    } else {
-      return false;
+        return new MemoryStore(pulley, expectations, registration);
     }
   }
 
@@ -61,13 +63,56 @@ function DataStore(pulley) {
   self.timestamp = pulley.util.timestamp;
 
   self.table = function(name) {
-    return tables[name] || _default;
+    if (store.wrappers.name) {
+      return store.wrappers.name;
+    } else {
+      if (expectations.tables.includes(name)) {
+        const wrapper = {};
+        for (const method in store.methods) {
+          wrapper[method] = function() {
+            const reference = store.tables[name] || name;
+            const args = Array.prototype.slice.call(arguments);
+            args.unshift(reference);
+            return store.methods[method].apply(this, args);
+          };
+        }
+        store.wrappers[name] = wrapper;
+        return wrapper;
+      } else {
+        return undefined;
+      }
+    }
   };
 
   //////////
 
   self.load = function(callback) {
-    return _engine.load(callback);
+    _engine.load(function(error) {
+      if (error) {
+        return callback(error);
+      }
+
+      pulley.store.table('pulley').
+        find({
+          configured: true
+        }, function(err, result) {
+          if (err) {
+            return callback(err);
+          }
+
+          if (result) {
+            callback(null);
+          } else {
+            console.log('Initial bootstrapping of Pulley');
+
+            // Organization create
+            // User create
+            // Project create
+
+            callback(null);
+          }
+        });
+    });
   };
 
   return self;

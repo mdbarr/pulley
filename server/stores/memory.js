@@ -1,9 +1,9 @@
 'use strict';
 
-function MemoryStore(pulley, expectations, register, provide) {
+function MemoryStore(pulley, expectations, registration) {
   const self = this;
 
-  provide('engine', 'memory');
+  registration.provide('engine', 'memory');
 
   const tables = {};
 
@@ -44,9 +44,9 @@ function MemoryStore(pulley, expectations, register, provide) {
   self.find = function(table, find, callback) {
     callback = wrap(callback);
 
-    for (const id of table.reference) {
-      if (contains(table.reference[id], find)) {
-        return callback(null, table.reference[id]);
+    for (const item in table.reference) {
+      if (contains(table.reference[item], find)) {
+        return callback(null, table.reference[item]);
       }
     }
 
@@ -57,25 +57,25 @@ function MemoryStore(pulley, expectations, register, provide) {
     callback = wrap(callback);
     const results = [];
 
-    for (const id of table.reference) {
-      if (contains(table.reference[id], query)) {
-        results.push(table.reference[id]);
+    for (const item in table.reference) {
+      if (contains(table.reference[item], query)) {
+        results.push(table.reference[item]);
       }
     }
 
     callback(null, results);
   };
 
-  self.remove = function(table, item, callback) {
+  self.remove = function(table, record, callback) {
     callback = wrap(callback);
 
-    if (item._id) {
-      delete table.reference[item._id];
+    if (record._id) {
+      delete table.reference[record._id];
       return callback(null, true);
     } else {
-      for (const id of table.reference) {
-        if (contains(table.reference[id], item)) {
-          delete table.reference[id];
+      for (const item in table.reference) {
+        if (contains(table.reference[item], record)) {
+          delete table.reference[item];
           return callback(null, true);
         }
       }
@@ -118,16 +118,17 @@ function MemoryStore(pulley, expectations, register, provide) {
     for (const table of expectations.tables) {
       tables[table] = tables[table] || {};
 
-      register({
+      registration.define({
         name: table,
-        reference: tables[table],
-        add: self.add,
-        find: self.find,
-        query: self.query,
-        remove: self.remove,
-        update: self.update
+        reference: tables[table]
       });
     }
+
+    registration.implement('add', self.add);
+    registration.implement('find', self.find);
+    registration.implement('query', self.query);
+    registration.implement('remove', self.remove);
+    registration.implement('update', self.update);
 
     callback(null);
   };
