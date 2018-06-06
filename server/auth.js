@@ -3,6 +3,8 @@
 function Auth(pulley) {
   const self = this;
 
+  const cookieName = pulley.config.api.cookie || pulley.config.name;
+
   //////////
 
   self.createSession = function(context, user) {
@@ -14,7 +16,7 @@ function Auth(pulley) {
         return context.error(500, 'cache error');
       }
 
-      context.response.header('Authorization', `Bearer ${ session._id }`);
+      context.response.setCookie(cookieName, session._id);
 
       context.send(200, session);
     });

@@ -25,6 +25,7 @@
     "nodemailer": "^4.6.4",
     "request": "^2.86.0",
     "restify": "^7.2.0",
+    "restify-cookies": "^0.2.5",
     "smtp-server": "^3.4.4",
     "uuid": "^3.2.1",
     "vue": "^2.5.2",

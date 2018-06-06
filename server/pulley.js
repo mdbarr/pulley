@@ -16,7 +16,7 @@ const defaults = {
     incoming: {
       enabled: true,
       domain: 'pulley.blue',
-      port: 25
+      port: 25 // iptables -I INPUT -p tcp -m tcp --dport 25 -j ACCEPT
     },
     outgoing: {
       enabled: true,

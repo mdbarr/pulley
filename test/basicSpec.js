@@ -19,9 +19,16 @@ describe('Basic Spec', function() {
     return validation.ok();
   });
 
-  it('should crate a new client and login', function() {
+  it('should verify the api server is running', function() {
     client = new Client();
+    return client.get('/version').
+      then(function(info) {
+        info.should.have.property('version');
+        info.version.should.equal(pulley.version);
+      });
+  });
 
+  it('should login as the default admin', function() {
     return client.post('/session', {
       username: 'admin',
       password: pulley.config.localPassword

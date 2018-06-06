@@ -22,6 +22,11 @@ function Models(pulley) {
         console.pp(object);
       }
 
+      if (typeof statusCode !== 'number') {
+        object = statusCode;
+        statusCode = 200;
+      }
+
       response.send(statusCode, object);
       response.end();
       next();

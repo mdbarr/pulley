@@ -43,13 +43,14 @@ function SmtpServer(pulley) {
   ////////////////////
 
   pulley.smtpServer = new SMTPServer({
-    name: pulley.config.name,
-    size: 10485760, // 10 mb
+    authOptional: true,
+    name: pulley.config.email.incoming.name || pulley.config.name,
     onAuth: self.auth,
     onConnect: self.connect,
+    onData: self.data,
     onMailFrom: self.mailFrom,
     onRcptTo: self.rcptTo,
-    onData: self.data
+    size: pulley.config.email.incoming.size || 10485760 // 10 mb
   });
 
   self.boot = function(callback) {

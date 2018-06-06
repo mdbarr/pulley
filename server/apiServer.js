@@ -1,6 +1,7 @@
 'use strict';
 
 const restify = require('restify');
+const cookieParser = require('restify-cookies');
 
 function ApiServer(pulley) {
   const self = this;
@@ -19,6 +20,7 @@ function ApiServer(pulley) {
   pulley.apiServer.use(restify.plugins.queryParser());
   pulley.apiServer.use(restify.plugins.bodyParser());
   pulley.apiServer.use(restify.plugins.authorizationParser());
+  pulley.apiServer.use(cookieParser.parse);
 
   pulley.apiServer.use(function (req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
@@ -37,6 +39,17 @@ function ApiServer(pulley) {
   ////////////////////
 
   pulley.apiServer.get('/api', pulley.util.placeHolder);
+
+  pulley.apiServer.get('/api/version', function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    const version = {
+      name: pulley.config.name,
+      version: pulley.version
+    };
+
+    context.send(200, version);
+  });
 
   ////////////////////
 
