@@ -55,8 +55,8 @@ function Models(pulley) {
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
-      user,
-      ttl: ttl || pulley.config.cache.sessionTTL
+      ttl: ttl || pulley.config.cache.sessionTTL,
+      user: user._id
     };
 
     return model;

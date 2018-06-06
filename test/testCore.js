@@ -52,9 +52,9 @@ global.Client = function({
         }
         if (!options.statusCode &&
             !(response.statusCode >= 200 && response.statusCode <= 299)) {
-          return reject(new Error(`[${ response.statusCode }] ${ options.url } failed.`));
+          return reject(new Error(`[${ response.statusCode }] ${ object.method } ${ options.url } failed: ${ JSON.stringify(body) }`));
         } else if (options.statusCode && response.statusCode !== options.statusCode) {
-          return reject(new Error(`[${ response.statusCode }] ${ options.url } expected ${ options.statusCode } response.`));
+          return reject(new Error(`[${ response.statusCode }] ${ object.method } ${ options.url } expected ${ options.statusCode } response: ${ JSON.stringify(body) }`));
         }
 
         resolve(body);

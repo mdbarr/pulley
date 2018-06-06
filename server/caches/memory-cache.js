@@ -22,9 +22,11 @@ function MemoryCache(pulley) {
   self.get = function(key, callback) {
     callback = pulley.util.callback(callback);
 
-    const object = cache[key];
-
-    callback(null, object.value);
+    if (cache[key] && cache[key].value) {
+      callback(null, cache[key].value);
+    } else {
+      callback(null, undefined);
+    }
   };
 
   self.del = function(key, callback) {

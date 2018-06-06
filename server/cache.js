@@ -48,7 +48,17 @@ function Cache(pulley) {
   };
 
   self.get = function(key, callback) {
-    _engine.get(key, callback);
+    _engine.get(key, function(error, value) {
+      if (error) {
+        pulley.events.emit('cache.error', key);
+      } else if (value !== undefined) {
+        pulley.events.emit('cache.hit', key);
+      } else {
+        pulley.events.emit('cache.miss', key);
+      }
+
+      callback(error, value);
+    });
   };
 
   self.del = function(key, callback) {

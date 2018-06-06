@@ -21,6 +21,74 @@ function DataStore(pulley) {
 
   //////////
 
+  const wrappers = {
+    add: function(table, item, callback) {
+      pulley.events.emit('datastore.add', table, item);
+
+      pulley.cache.set(item._id, item, function (error) {
+        if (error) {
+          callback(error);
+        } else {
+          store.methods.add(table, item, callback);
+        }
+      });
+    },
+
+    find: function(table, item, callback) {
+      if (typeof item === 'string') {
+        item = {
+          _id: item
+        };
+      }
+
+      if (item._id) {
+        pulley.cache.get(item._id, function(error, result) {
+          if (result) {
+            return callback(null, result);
+          } else {
+            store.methods.find(table, item, function(error, result) {
+              if (!error && result) {
+                pulley.cache.set(result._id, result, function(error) {
+                  callback(error, result);
+                });
+              } else {
+                callback(error, result);
+              }
+            });
+          }
+        });
+      } else {
+        store.methods.find(table, item, function(error, result) {
+          if (!error && result) {
+            pulley.cache.set(result._id, result, function(error) {
+              callback(error, result);
+            });
+          } else {
+            callback(error, result);
+          }
+        });
+      }
+    },
+
+    query: function(table, query, callback) {
+      store.methods.query(table, query, callback);
+    },
+
+    remove: function(table, item, callback) {
+      pulley.cache.del(item._id, function() {
+        store.methods.remove(table, item, callback);
+      });
+    },
+
+    update: function(table, item, update, callback) {
+      pulley.cache.del(item._id, function() {
+        store.methods.update(table, item, update, callback);
+      });
+    }
+  };
+
+  //////////
+
   const registration = {
     define: function(options) {
       const table = {
@@ -65,7 +133,7 @@ function DataStore(pulley) {
           const reference = store.tables[name] || name;
           const args = Array.prototype.slice.call(arguments);
           args.unshift(reference);
-          return store.methods[method].apply(this, args);
+          return wrappers[method].apply(this, args);
         };
       }
       store.wrappers[name] = wrapper;

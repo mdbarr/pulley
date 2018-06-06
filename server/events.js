@@ -1,22 +1,19 @@
 'use strict';
 
+const EventEmitter = require('events');
+const inherits = require('util').inherits;
+
 function Events(pulley) {
   const self = this;
 
-  const events = [];
+  EventEmitter.call(this);
 
-  self.event = function(type, data) {
-    const event = {
-      id: pulley.store.generateId(),
-      type,
-      timestamp: Date.now(),
-      data
-    };
-    events.push(event);
-  };
+  self.pulley = pulley;
 
   return self;
 }
+
+inherits(Events, EventEmitter);
 
 module.exports = function(pulley) {
   return new Events(pulley);

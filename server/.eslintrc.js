@@ -71,11 +71,12 @@ module.exports = {
       "error",
       {
         "allow": [
-          "resolve",
-          "reject",
+          "body",
           "error",
+          "reject",
+          "resolve",
           "response",
-          "body"
+          "result"
         ]
       }
     ],

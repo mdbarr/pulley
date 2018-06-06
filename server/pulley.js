@@ -67,6 +67,8 @@ function Pulley(config = {}) {
 
   ////////////////////
 
+  self.events = require('./events')(self);
+
   self.cache = require('./cache')(self);
   self.store = require('./datastore')(self);
 
@@ -77,7 +79,6 @@ function Pulley(config = {}) {
 
   self.roles = require('./roles')(self);
   self.models = require('./models')(self);
-  self.events = require('./events')(self);
 
   self.git = require('./git')(self);
 

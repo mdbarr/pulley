@@ -22,7 +22,10 @@ function Auth(pulley) {
 
       context.response.setCookie(cookieName, session._id);
 
-      context.send(200, session);
+      context.send(200, {
+        session,
+        user
+      });
     });
 
     return session;
@@ -63,11 +66,22 @@ function Auth(pulley) {
   self.getSession = function(req, res, next) {
     const context = pulley.models.context(req, res, next);
 
-    const session = {
-      valid: true
-    };
-
-    context.send(session);
+    pulley.cache.get(req.authorization.session, function(error, session) {
+      if (error) {
+        return context.error(500, 'no such session');
+      } else {
+        pulley.store.users.find(session.user, function(error, user) {
+          if (error) {
+            return context.error(500, 'no such user');
+          } else {
+            context.send(200, {
+              session,
+              user
+            });
+          }
+        });
+      }
+    });
   };
 
   //////////
@@ -80,11 +94,25 @@ function Auth(pulley) {
       return context.error(401, 'no such session');
     }
 
-    req.authorization = {
-      session: sessionId
-    };
+    pulley.cache.get(sessionId, function(error, session) {
+      if (error || !session) {
+        return context.error(401, 'no such session');
+      } else {
+        pulley.store.users.find(session.user, function(error, user) {
+          if (error || !user) {
+            return context.error(401, 'no such user');
+          } else {
 
-    next();
+            req.authorization = {
+              session: sessionId,
+              user: user._id
+            };
+
+            next();
+          }
+        });
+      }
+    });
   };
 
   self.requireRole = function(role) {
