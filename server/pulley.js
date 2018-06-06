@@ -67,8 +67,8 @@ function Pulley(config = {}) {
 
   ////////////////////
 
-  self.store = require('./datastore')(self);
   self.cache = require('./cache')(self);
+  self.store = require('./datastore')(self);
 
   self.api = require('./apiServer')(self);
   self.smtp = require('./smtpServer')(self);

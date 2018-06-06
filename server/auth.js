@@ -8,9 +8,13 @@ function Auth(pulley) {
   //////////
 
   self.createSession = function(context, user) {
+
+    user.metadata.lastLogin = Date.now();
+
     const session = pulley.models.session({
       user
     });
+
     pulley.cache.set(session._id, session, function(error) {
       if (error) {
         return context.error(500, 'cache error');
@@ -56,10 +60,29 @@ function Auth(pulley) {
     }
   };
 
+  self.getSession = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    const session = {
+      valid: true
+    };
+
+    context.send(session);
+  };
+
   //////////
 
   self.requireUser = function(req, res, next) {
-    req.authorization = {};
+    const context = pulley.models.context(req, res, next);
+
+    const sessionId = req.cookies[cookieName];
+    if (!sessionId) {
+      return context.error(401, 'no such session');
+    }
+
+    req.authorization = {
+      session: sessionId
+    };
 
     next();
   };
@@ -77,6 +100,7 @@ function Auth(pulley) {
   //////////
 
   pulley.apiServer.post('/api/session', self.login);
+  pulley.apiServer.get('/api/session', self.requireUser, self.getSession);
 
   //////////
 

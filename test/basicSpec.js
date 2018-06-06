@@ -19,7 +19,7 @@ describe('Basic Spec', function() {
     return validation.ok();
   });
 
-  it('should verify the api server is running', function() {
+  it('should create a client and verify the api server is running', function() {
     client = new Client();
     return client.get('/version').
       then(function(info) {
@@ -35,6 +35,13 @@ describe('Basic Spec', function() {
     }).
       then(function(session) {
         session.should.be.ok();
+      });
+  });
+
+  it('should validation the current session', function() {
+    return client.get('/session').
+      then(function() {
+
       });
   });
 
