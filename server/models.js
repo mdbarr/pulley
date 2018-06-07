@@ -88,8 +88,7 @@ function Models(pulley) {
       progress: 0,
       pattern: pulley.util.toRegularExpression(project.branchPattern),
       branches: [],
-      repository: null,
-      credentials: null
+      repository: null
     };
 
     return model;
@@ -190,41 +189,44 @@ function Models(pulley) {
   };
 
   ////////////////////
-  // Review (Pull Request)
-  self.review = function({
-    project, source, target, owner, hidden
+  // Pull Request
+  self.pullRequest = function({
+    _id, organization, project, source, target, head, owner,
+    title, description, created, updated, hidden, state,
+    reviewers, commits, versions, metadata
   }) {
     const timestamp = Date.now();
 
     const model = {
-      _id: pulley.store.generateId(),
-      rId: project.reviews.length + 1,
-      project: project._id,
+      _id: _id || pulley.store.generateId(),
+      organization,
+      project,
       source,
       target,
-      head: null,
+      head: head || null,
       owner,
-      created: timestamp,
-      updated: timestamp,
+      title,
+      description,
+      created: created || timestamp,
+      updated: updated || timestamp,
       hidden,
-      state: 'draft',
-      reviewers: [],
-      commits: {},
-      versions: []
+      state: state || 'draft',
+      reviewers: reviewers || [],
+      commits: commits || {},
+      versions: versions || [],
+      metadata: metadata || {}
     };
-
-    project.reviews.unshift(model);
 
     return model;
   };
 
   ////////////////////
   // Change Set <- Pull Request
-  self.changeset = function(review) {
+  self.changeset = function(pullRequest) {
     const model = {
       _id: pulley.store.generateId(),
-      review: review._id,
-      version: review.versions.length + 1,
+      review: pullRequest._id,
+      version: pullRequest.versions.length + 1,
       sourceCommit: null,
       targetCommit: null,
       mergebase: null,

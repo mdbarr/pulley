@@ -36,29 +36,6 @@ function Git(pulley) {
 
   //////////
 
-  self.openRepository = function(project, callback) {
-    callback = pulley.util.callback(callback);
-
-    pulley.events.emit('repo.git.open', project);
-
-    const model = pulley.models.repository(project);
-    repositories[project._id] = model;
-
-    model.state = 'opening';
-
-    nodegit.Repository.open(project.gitPath).
-      then(function(repo) {
-        model.repository = repo;
-        model.state = 'up-to-date';
-
-        callback(null, model);
-      }).
-      catch(function(error) {
-        model.state = 'error';
-        callback(error);
-      });
-  };
-
   self.cloneRepository = function(project, callback) {
     callback = pulley.util.callback(callback);
 
@@ -107,6 +84,8 @@ function Git(pulley) {
   self.updateRepository = function(project, callback) {
     callback = pulley.util.callback(callback);
 
+    pulley.events.emit('repo.git.update', project);
+
     const model = repositories[project._id];
 
     return model.repository.fetch('origin', {
@@ -129,6 +108,7 @@ function Git(pulley) {
         const branches = branchFilter(model.pattern, project.masterBranch, refs);
         model.branches = branches;
 
+        model.state = 'up-to-date';
         model.progress = 100;
         callback(null, project);
       }).
@@ -137,24 +117,26 @@ function Git(pulley) {
       });
   };
 
-  self.createReview = function(project, owner, sourceBranch, targetBranch, callback) {
-    const review = pulley.models.review({
-      project: project,
-      source: sourceBranch,
-      target: targetBranch,
-      owner: owner,
-      hidden: false
-    });
+  self.openRepository = function(project, callback) {
+    callback = pulley.util.callback(callback);
 
-    return self.generateReviewChangeset(review, project.repository, sourceBranch, targetBranch).
-      then(function(changeset) {
-        review.head = changeset.sourceCommit;
-        review.versions.unshift(changeset);
+    pulley.events.emit('repo.git.open', project);
 
-        return callback(null, review);
+    const model = pulley.models.repository(project);
+    repositories[project._id] = model;
+
+    model.state = 'opening';
+
+    nodegit.Repository.open(project.gitPath).
+      then(function(repo) {
+        model.repository = repo;
+        model.state = 'updating';
+
+        self.updateRepository(project, callback);
       }).
       catch(function(error) {
-        return callback(error);
+        model.state = 'error';
+        callback(error);
       });
   };
 
@@ -180,7 +162,7 @@ function Git(pulley) {
       });
   };
 
-  self.generateReviewChangeset = function(review, repository) {
+  self.generateBranchChangeset = function(pullRequest, callback) {
     let sourceCommit;
     let targetCommit;
     let mergebase;
@@ -188,9 +170,13 @@ function Git(pulley) {
     let targetTree;
     const commits = [];
 
-    const changeset = pulley.models.changeset(review);
+    callback = pulley.util.callback(callback);
 
-    return repository.getBranchCommit(review.target).
+    const model = repositories[pullRequest.project];
+
+    const changeset = pulley.models.changeset(pullRequest);
+
+    return model.repository.getBranchCommit(pullRequest.target).
       then(function(firstCommitOnMaster) {
         targetCommit = firstCommitOnMaster;
         changeset.targetCommit = targetCommit.id().toString();
@@ -198,7 +184,7 @@ function Git(pulley) {
       }).
       then(function(tree) {
         targetTree = tree;
-        return repository.getBranchCommit(review.source);
+        return model.repository.getBranchCommit(pullRequest.source);
       }).
       then(function(firstCommitOnBranch) {
         sourceCommit = firstCommitOnBranch;
@@ -207,23 +193,23 @@ function Git(pulley) {
       }).
       then(function(tree) {
         sourceTree = tree;
-        return nodegit.Diff.treeToTree(repository, targetTree, sourceTree);
+        return nodegit.Diff.treeToTree(model.repository, targetTree, sourceTree);
       }).
       then(function(diff) {
         return diff.toBuf(nodegit.Diff.FORMAT.PATCH);
       }).
       then(function(buf) {
         changeset.diff = buf.toString();
-        return nodegit.Merge.base(repository, targetCommit, sourceCommit);
+        return nodegit.Merge.base(model.repository, targetCommit, sourceCommit);
       }).
       then(function(base) {
         mergebase = base;
         changeset.mergebase = mergebase.toString();
 
-        return nodegit.Merge.commits(repository, targetCommit, sourceCommit);
+        return nodegit.Merge.commits(model.repository, targetCommit, sourceCommit);
       }).
       then(function(mergeIndex) {
-        review.mergeable = changeset.mergeable = !mergeIndex.hasConflicts();
+        pullRequest.mergeable = changeset.mergeable = !mergeIndex.hasConflicts();
         return mergeIndex.clear();
       }).
       then(function() {
@@ -250,9 +236,8 @@ function Git(pulley) {
       }).
       then(function(commitList) {
         return new Promise(function(resolve, reject) {
-
           async.map(commitList, function(commit, next) {
-            if (review.commits[commit.sha()]) {
+            if (pullRequest.commits[commit.sha()]) {
               return next(null, commit.sha());
             }
 
@@ -331,7 +316,7 @@ function Git(pulley) {
                     return entryChain;
                   }).
                   then(function() {
-                    review.commits[change.commit] = change;
+                    pullRequest.commits[change.commit] = change;
                     next(null, change.commit);
                   }).
                   catch(function(error) {
@@ -347,34 +332,40 @@ function Git(pulley) {
             }
           });
         });
+      }).
+      then(function(branchChanges) {
+        return callback(null, branchChanges);
       });
   };
 
-  self.isMergeable = function(review, repository, callback) {
+  self.isMergeable = function(pullRequest, callback) {
     let targetCommit;
     let sourceCommit;
 
-    const changeset = review.versions[0];
+    const model = repositories[pullRequest.project];
+
+    const changeset = pullRequest.versions[0];
     if (!changeset) {
       return callback(new Error('no versions in review'));
     }
 
-    return repository.getBranchCommit(review.target).
+    return model.repository.getBranchCommit(pullRequest.target).
       then(function(firstCommitOnMaster) {
         targetCommit = firstCommitOnMaster;
         changeset.targetCommit = targetCommit.id().toString();
-        return repository.getBranchCommit(review.source);
+        return model.repository.getBranchCommit(pullRequest.source);
       }).
       then(function(firstCommitOnBranch) {
         sourceCommit = firstCommitOnBranch;
-        return nodegit.Merge.commits(repository, targetCommit, sourceCommit);
+        return nodegit.Merge.commits(model.repository, targetCommit, sourceCommit);
       }).
       then(function(mergeIndex) {
-        review.mergeable = changeset.mergeable = !mergeIndex.hasConflicts();
+        pullRequest.mergeable = changeset.mergeable = !mergeIndex.hasConflicts();
         return mergeIndex.clear();
+
       }).
       then(function() {
-        callback(null, review.mergeable);
+        callback(null, pullRequest.mergeable);
       }).
       catch(function(error) {
         callback(error);
@@ -382,22 +373,18 @@ function Git(pulley) {
   };
 
   self.credentials = function(model, project, user) {
-    if (model.credentials) {
-      return model.credentials;
-    }
-
     switch (project.credentials.type) {
       case 'key':
-        return model.credentials = nodegit.Cred.sshKeyMemoryNew(user,
-                                                          project.credentials.publicKey,
-                                                          project.credentials.privateKey,
-                                                          project.credentials.passphrase);
+        return nodegit.Cred.sshKeyMemoryNew(user,
+                                            project.credentials.publicKey,
+                                            project.credentials.privateKey,
+                                            project.credentials.passphrase);
       case 'local-key':
       default:
-        return model.credentials = nodegit.Cred.sshKeyNew(user,
-                                                    project.credentials.publicKey,
-                                                    project.credentials.privateKey,
-                                                    project.credentials.passphrase);
+        return nodegit.Cred.sshKeyNew(user,
+                                      project.credentials.publicKey,
+                                      project.credentials.privateKey,
+                                      project.credentials.passphrase);
 
     }
   };

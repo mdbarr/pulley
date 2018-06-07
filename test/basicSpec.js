@@ -87,6 +87,38 @@ describe('Basic Spec', function() {
       });
   });
 
+  it('should force a repository update', function(done) {
+    pulley.projects.updateRepository(project, done);
+  });
+
+  it('should get the project details verify it is up to date', function() {
+    return client.get(`/projects/${ project._id }`).
+      then(function(details) {
+        details.should.have.property('_id', project._id);
+
+        details.should.have.property('state', 'up-to-date');
+        details.should.have.property('progress', 100);
+
+        details.should.have.property('branches');
+        details.branches.should.be.instanceOf(Array);
+        details.branches.should.not.have.length(0);
+      });
+  });
+
+  it('should create a pull request', function() {
+    const pull = {
+      title: 'One Ahead',
+      description: 'The thing...',
+      source: 'origin/one-ahead',
+      target: 'origin/master'
+    };
+
+    return client.post(`/projects/${ project._id }/pull`, pull).
+      then(function(pullRequest) {
+        console.pp(pullRequest);
+      });
+  });
+
   /*
   it('should create a test project', function(done) {
     this.timeout(60000);

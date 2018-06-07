@@ -37,6 +37,16 @@ function Projects(pulley) {
     }
   };
 
+  self.generateBranchChangeset = function(project, pullRequest, callback) {
+    switch (project.type) {
+      case 'git':
+      default:
+        return pulley.git.generateBranchChangeset(pullRequest, callback);
+    }
+  };
+
+  //////////
+
   self.formatProject = function(project, repository) {
     repository = repository || self.repository(project);
 
@@ -128,6 +138,55 @@ function Projects(pulley) {
 
   //////////
 
+  self.createPullRequest = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    if (!req.body || !req.body.title || !req.body.description ||
+        !req.body.source || !req.body.target) {
+      return context.error(400, 'missing parameters');
+    }
+
+    pulley.store.projects.find(req.params.id, function(error, project) {
+      if (error) {
+        return context.error(500, 'project lookup failed');
+      }
+      if (!project) {
+        return context.error(404, 'project not found');
+      }
+
+      const pullRequest = pulley.models.pullRequest({
+        organization: context.organization,
+        project: req.params.id,
+        source: req.body.source,
+        target: req.body.target,
+        owner: context.user,
+        title: req.body.title,
+        description: req.body.description,
+        reviewers: req.body.reviewers,
+        metadata: req.body.metadata
+      });
+
+      self.generateBranchChangeset(project, pullRequest, function(error, changeset) {
+        if (error) {
+          return context.error(500, 'change set generation failed');
+        }
+
+        pullRequest.head = changeset.sourceCommit;
+        pullRequest.versions.unshift(changeset);
+
+        pulley.store.pullRequests.add(pullRequest, function(error) {
+          if (error) {
+            return context.error(500, 'pull request cretaion failed');
+          }
+
+          context.send(pullRequest);
+        });
+      });
+    });
+  };
+
+  //////////
+
   pulley.apiServer.post('/api/projects',
                         pulley.auth.requireRole('admin'),
                         self.createProject);
@@ -139,6 +198,10 @@ function Projects(pulley) {
   pulley.apiServer.get('/api/projects/:id',
                        pulley.auth.requireUser,
                        self.getProject);
+
+  pulley.apiServer.post('/api/projects/:id/pull',
+                        pulley.auth.requireUser,
+                        self.createPullRequest);
 
   //////////
 

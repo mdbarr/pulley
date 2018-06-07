@@ -8,7 +8,8 @@ function DataStore(pulley) {
   const self = this;
 
   const expectations = {
-    tables: [ 'configuration', 'organizations', 'projects', 'users', 'groups' ], // define
+    tables: [ 'configuration', 'organizations', 'projects', 'users', 'groups',
+      'pullRequests', 'reviews' ], // define
     methods: [ 'add', 'find', 'query', 'remove', 'update' ], // implement
     providers: [ 'engine', 'generateId', 'id', 'timestamp' ] // provide
   };
