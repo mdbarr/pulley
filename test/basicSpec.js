@@ -1,7 +1,8 @@
 'use strict';
 
 describe('Basic Spec', function() {
-  let client;
+  const client = new Client();
+
   let project;
 
   it('should verify a running instance of Pulley', function() {
@@ -16,7 +17,6 @@ describe('Basic Spec', function() {
   });
 
   it('should create a client and verify the api server is running', function() {
-    client = new Client();
     return client.get('/version').
       then(function(info) {
         info.should.have.property('version');
@@ -61,6 +61,20 @@ describe('Basic Spec', function() {
     return client.post('/projects', testProject).
       then(function(createdProject) {
         project = createdProject;
+      });
+  });
+
+  rit('should get the project details verify it is up to date', function() {
+    return client.get(`/projects/${ project._id }`).
+      then(function(details) {
+        details.should.have.property('_id', project._id);
+
+        details.should.have.property('state', 'up-to-date');
+        details.should.have.property('progress', 100);
+
+        details.should.have.property('branches');
+        details.branches.should.be.instanceOf(Array);
+        details.branches.should.not.have.length(0);
       });
   });
 

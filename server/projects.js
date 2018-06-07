@@ -4,6 +4,7 @@ function Projects(pulley) {
   const self = this;
 
   //////////
+
   self.repository = function(project) {
     switch (project.type) {
       case 'git':
@@ -105,6 +106,26 @@ function Projects(pulley) {
     });
   };
 
+  self.getProject = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    pulley.store.projects.find(req.params.id, function(error, project) {
+      if (error) {
+        return context.error(500, 'project lookup failed');
+      }
+      if (!project) {
+        return context.error(404, 'project not found');
+      }
+      if (project.organization !== context.organization ||
+          (project.scheme === 'explicit' && !project.users.includes(context.user))) {
+        return context.error(403, 'forbidden');
+      }
+
+      const response = self.formatProject(project);
+      context.send(response);
+    });
+  };
+
   //////////
 
   pulley.apiServer.post('/api/projects',
@@ -116,8 +137,8 @@ function Projects(pulley) {
                        self.getProjects);
 
   pulley.apiServer.get('/api/projects/:id',
-                       pulley.auth.requireUser
-                      );
+                       pulley.auth.requireUser,
+                       self.getProject);
 
   //////////
 
