@@ -14,8 +14,18 @@ function Models(pulley) {
       timestamp,
       request,
       response,
-      next
+      next,
+
+      session: null,
+      user: null,
+      organization: null
     };
+
+    if (request.authorization) {
+      model.session = request.authorization.session;
+      model.user = request.authorization.user;
+      model.organization = request.authorization.organization;
+    }
 
     model.send = function(statusCode, object) {
       if (!pulley.config.silent) {
@@ -35,6 +45,11 @@ function Models(pulley) {
     model.error = function(statusCode, message) {
       if (!pulley.config.silent) {
         console.log('ERROR'.rgb('#bf2c30'), message);
+      }
+
+      if (typeof statusCode !== 'number') {
+        message = statusCode;
+        statusCode = 400;
       }
 
       response.send(statusCode, {
@@ -71,9 +86,10 @@ function Models(pulley) {
       organization: project.organization,
       state: 'initializing',
       progress: 0,
-      pattern: new RegExp(project.branchPattern),
+      pattern: pulley.util.toRegularExpression(project.branchPattern),
       branches: [],
-      repository: null
+      repository: null,
+      credentials: null
     };
 
     return model;
@@ -132,7 +148,7 @@ function Models(pulley) {
   self.project = function({
     _id, name, created, organization, type, description,
     origin, isRemote, repoName, localPath, gitPath,
-    credentials, rules, webhook, branchPattern,
+    credentials, rules, webhook, branchPattern, masterBranch,
     scheme, users, groups, options, metadata
   }) {
     const model = {
@@ -152,7 +168,8 @@ function Models(pulley) {
         requireFullApproval: true
       },
       metadata: metadata || {},
-      branchPattern: branchPattern || '/^r/(.*?)/(.*?)$/'
+      branchPattern: branchPattern || pulley.config.options.branchPattern,
+      masterBranch: masterBranch || 'origin/master'
     };
 
     model.credentials = credentials || pulley.config[model.type].credentials;

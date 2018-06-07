@@ -7,10 +7,10 @@ const nodegit = require('nodegit');
 
 ////////////////////////////////////////
 
-function branchFilter(pattern, refs) {
+function branchFilter(pattern, master, refs) {
   return refs.filter(ref => ref.startsWith('refs/remotes/')).
-    map(branch => branch.replace(/^refs\/remotes\//, ''));
-    //filter(branch => pattern.test(branch));
+    map(branch => branch.replace(/^refs\/remotes\//, '')).
+    filter(branch => pattern.test(branch) || branch === master);
 }
 
 function calculateProgress(progress) {
@@ -30,9 +30,17 @@ function Git(pulley) {
 
   const repositories = {};
 
+  self.repository = function(project) {
+    return repositories[project._id];
+  };
+
   //////////
 
   self.openRepository = function(project, callback) {
+    callback = pulley.util.callback(callback);
+
+    pulley.events.emit('repo.git.open', project);
+
     const model = pulley.models.repository(project);
     repositories[project._id] = model;
 
@@ -52,6 +60,10 @@ function Git(pulley) {
   };
 
   self.cloneRepository = function(project, callback) {
+    callback = pulley.util.callback(callback);
+
+    pulley.events.emit('repo.git.clone', project);
+
     const model = pulley.models.repository(project);
     repositories[project._id] = model;
 
@@ -66,7 +78,7 @@ function Git(pulley) {
       fetchOpts: {
         callbacks: {
           credentials: function(repo, user) {
-            return self.credentials(project, user);
+            return self.credentials(model, project, user);
           },
           transferProgress: function(progress) {
             model.progress = calculateProgress(progress);
@@ -79,7 +91,7 @@ function Git(pulley) {
         return nodegit.Reference.list(repository);
       }).
       then(function(refs) {
-        const branches = branchFilter(model.pattern, refs);
+        const branches = branchFilter(model.pattern, project.masterBranch, refs);
         model.branches = branches;
 
         model.state = 'up-to-date';
@@ -93,12 +105,14 @@ function Git(pulley) {
   };
 
   self.updateRepository = function(project, callback) {
+    callback = pulley.util.callback(callback);
+
     const model = repositories[project._id];
 
     return model.repository.fetch('origin', {
       callbacks: {
         credentials: function(repo, user) {
-          return self.credentials(project, user);
+          return self.credentials(model, project, user);
         },
         transferProgress: function(progress) {
           model.progress = calculateProgress(progress);
@@ -112,7 +126,7 @@ function Git(pulley) {
         return nodegit.Reference.list(model.repository);
       }).
       then(function(refs) {
-        const branches = branchFilter(model.pattern, refs);
+        const branches = branchFilter(model.pattern, project.masterBranch, refs);
         model.branches = branches;
 
         model.progress = 100;
@@ -367,16 +381,20 @@ function Git(pulley) {
       });
   };
 
-  self.credentials = function(project, user) {
+  self.credentials = function(model, project, user) {
+    if (model.credentials) {
+      return model.credentials;
+    }
+
     switch (project.credentials.type) {
       case 'key':
-        return project.creds = nodegit.Cred.sshKeyMemoryNew(user,
+        return model.credentials = nodegit.Cred.sshKeyMemoryNew(user,
                                                           project.credentials.publicKey,
                                                           project.credentials.privateKey,
                                                           project.credentials.passphrase);
       case 'local-key':
       default:
-        return project.creds = nodegit.Cred.sshKeyNew(user,
+        return model.credentials = nodegit.Cred.sshKeyNew(user,
                                                     project.credentials.publicKey,
                                                     project.credentials.privateKey,
                                                     project.credentials.passphrase);

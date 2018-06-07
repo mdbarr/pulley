@@ -4,41 +4,13 @@ function Projects(pulley) {
   const self = this;
 
   //////////
-
-  self.createProject = function(req, res, next) {
-    const context = pulley.models.context(req, res, next);
-
-    if (!req.body || !req.body.name || !req.body.origin) {
-      return context.error(400, 'missing parameters');
+  self.repository = function(project) {
+    switch (project.type) {
+      case 'git':
+      default:
+        return pulley.git.repository(project);
     }
-
-    const project = pulley.models.project({
-      name: req.body.name,
-      organization: req.authorization.organization,
-      description: req.body.description,
-      origin: req.body.origin,
-      credentials: req.body.credentials,
-      rules: req.body.rules,
-      scheme: req.body.scheme,
-      users: req.body.users,
-      groups: req.body.groups,
-      options: req.body.options,
-      metadata: req.body.metadata
-    });
-
-    self.cloneRepository(project, function(error, model) {
-      if (error) {
-        console.log(error);
-        context.error(500, 'project clone failed');
-      } else {
-        console.pp(model);
-        console.pp(project);
-        context.send(project);
-      }
-    });
   };
-
-  //////////
 
   self.cloneRepository = function(project, callback) {
     switch (project.type) {
@@ -64,11 +36,88 @@ function Projects(pulley) {
     }
   };
 
+  self.formatProject = function(project, repository) {
+    repository = repository || self.repository(project);
+
+    const response = Object.assign({}, project, {
+      state: repository.state,
+      progress: repository.progress,
+      head: repository.head,
+      branches: repository.branches
+    });
+
+    return response;
+  };
+
+  //////////
+
+  self.createProject = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    if (!req.body || !req.body.name || !req.body.origin) {
+      return context.error(400, 'missing parameters');
+    }
+
+    const project = pulley.models.project({
+      name: req.body.name,
+      organization: req.authorization.organization,
+      description: req.body.description,
+      origin: req.body.origin,
+      credentials: req.body.credentials,
+      rules: req.body.rules,
+      scheme: req.body.scheme,
+      users: req.body.users,
+      groups: req.body.groups,
+      options: req.body.options,
+      metadata: req.body.metadata,
+      branchPattern: req.body.branchPattern
+    });
+
+    pulley.store.projects.add(project, function(error) {
+      if (error) {
+        return context.error(500, 'project creation failed');
+      }
+
+      self.cloneRepository(project);
+
+      const response = self.formatProject(project);
+
+      context.send(response);
+    });
+  };
+
+  self.getProjects = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    pulley.store.projects.query({
+      organization: context.organization
+    }, function(error, projects) {
+      if (error) {
+        return context.error(500, 'project query failed');
+      }
+
+      const response = {
+        items: projects,
+        count: projects.length
+      };
+
+      context.send(response);
+    });
+  };
+
   //////////
 
   pulley.apiServer.post('/api/projects',
                         pulley.auth.requireRole('admin'),
                         self.createProject);
+
+  pulley.apiServer.get('/api/projects',
+                       pulley.auth.requireUser,
+                       self.getProjects);
+
+  pulley.apiServer.get('/api/projects/:id',
+                       pulley.auth.requireUser
+                      );
 
   //////////
 

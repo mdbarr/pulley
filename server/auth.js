@@ -8,8 +8,8 @@ function Auth(pulley) {
   //////////
 
   self.createSession = function(context, user) {
-
     user.metadata.lastLogin = Date.now();
+    // Update?
 
     const session = pulley.models.session({
       user
@@ -101,11 +101,11 @@ function Auth(pulley) {
             return context.error(401, 'no such user');
           } else {
 
-            context.request.authorization = {
+            Object.assign(context.request.authorization, {
               organization: user.organization,
               session: sessionId,
               user: user._id
-            };
+            });
 
             next();
           }
@@ -124,7 +124,8 @@ function Auth(pulley) {
     return function(req, res, next) {
       const context = pulley.models.context(req, res, next);
       self.authenticate(context, function() {
-        console.log('HERE', role);
+        // RBAC
+        req.authorization.role = role;
         next();
       });
     };

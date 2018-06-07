@@ -6,6 +6,9 @@ const uuidv4 = require('uuid/v4');
 
 const barrkeep = require('barrkeep');
 
+const regExpPattern = /^\/(.*?)\/([gim]*)$/;
+const escapePattern = /[|\\{}()[\]^$+*?.]/g;
+
 function Util(pulley) {
   const self = this;
 
@@ -82,6 +85,18 @@ function Util(pulley) {
         lineNumbers: true
       });
     }
+  };
+
+  self.toRegularExpression = function(string) {
+    if (!string) {
+      return /.*/;
+    }
+
+    const parts = string.match(regExpPattern);
+    if (parts) {
+      return new RegExp(parts[1], parts[2]);
+    }
+    return new RegExp('^' + string.replace(escapePattern, '\\$&') + '$');
   };
 
   return self;

@@ -1,12 +1,8 @@
 'use strict';
 
 describe('Basic Spec', function() {
-  /*
-  let project;
-  let review;
-  */
-
   let client;
+  let project;
 
   it('should verify a running instance of Pulley', function() {
     pulley.should.have.property('config');
@@ -34,26 +30,46 @@ describe('Basic Spec', function() {
       password: pulley.config.localPassword
     }).
       then(function(session) {
-        session.should.be.ok();
+        session.should.have.property('session');
+        session.should.have.property('user');
       });
   });
 
   it('should validation the current session', function() {
     return client.get('/session').
-      then(function() {
+      then(function(session) {
+        session.should.have.property('session');
+        session.should.have.property('user');
+      });
+  });
 
+  it('should get the list of projects and find none', function() {
+    return client.get('/projects').
+      then(function(projects) {
+        projects.items.should.be.instanceOf(Array);
+        projects.items.should.have.length(0);
       });
   });
 
   it('should create a test project', function() {
     const testProject = {
       name: 'pulley-test',
-      origin: 'git@github.com:mdbarr/pulley-test.git'
+      origin: 'git@github.com:mdbarr/pulley-test.git',
+      branchPattern: '/.*/'
     };
 
     return client.post('/projects', testProject).
-      then(function(project) {
-        console.pp(project);
+      then(function(createdProject) {
+        project = createdProject;
+      });
+  });
+
+  it('should get the list of projects and find one', function() {
+    return client.get('/projects').
+      then(function(projects) {
+        projects.items.should.be.instanceOf(Array);
+        projects.items.should.have.length(1);
+        projects.items[0]._id.should.equal(project._id);
       });
   });
 

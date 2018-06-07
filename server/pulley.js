@@ -40,13 +40,17 @@ const defaults = {
   },
 
   git: {
-    path: '/tmp/',
+    path: '/tmp/pulley/',
     credentials: {
       type: 'local-key',
       publicKey: path.join(process.env.HOME, '.ssh/id_rsa.pub'),
       privateKey: path.join(process.env.HOME, '.ssh/id_rsa'),
       passphrase: ''
     }
+  },
+
+  options: {
+    branchPattern: '/^r/(.*?)/(.*?)$/'
   },
 
   silent: false
