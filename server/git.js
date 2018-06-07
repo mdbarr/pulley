@@ -7,9 +7,10 @@ const nodegit = require('nodegit');
 
 ////////////////////////////////////////
 
-function branchFilter(refs) {
+function branchFilter(pattern, refs) {
   return refs.filter(ref => ref.startsWith('refs/remotes/')).
     map(branch => branch.replace(/^refs\/remotes\//, ''));
+    //filter(branch => pattern.test(branch));
 }
 
 function calculateProgress(progress) {
@@ -25,78 +26,96 @@ function calculateProgress(progress) {
 function Git(pulley) {
   const self = this;
 
+  //////////
+
   const repositories = {};
 
+  //////////
+
+  self.openRepository = function(project, callback) {
+    const model = pulley.models.repository(project);
+    repositories[project._id] = model;
+
+    model.state = 'opening';
+
+    nodegit.Repository.open(project.gitPath).
+      then(function(repo) {
+        model.repository = repo;
+        model.state = 'up-to-date';
+
+        callback(null, model);
+      }).
+      catch(function(error) {
+        model.state = 'error';
+        callback(error);
+      });
+  };
+
   self.cloneRepository = function(project, callback) {
+    const model = pulley.models.repository(project);
+    repositories[project._id] = model;
+
     try {
-      rimraf.sync(project.path);
+      rimraf.sync(project.localPath);
     } catch (error) {
+      model.state = 'error';
       return callback(error);
     }
 
-    return nodegit.Clone(project.origin, project.path, {
+    return nodegit.Clone(project.origin, project.localPath, {
       fetchOpts: {
         callbacks: {
           credentials: function(repo, user) {
             return self.credentials(project, user);
           },
           transferProgress: function(progress) {
-            project.progress = calculateProgress(progress);
+            model.progress = calculateProgress(progress);
           }
         }
       }
     }).
       then(function(repository) {
-        repositories[project.origin] = repository;
-
-        project.repository = repository;
+        model.repository = repository;
         return nodegit.Reference.list(repository);
       }).
       then(function(refs) {
-        const branches = branchFilter(refs);
-        project.branches = branches;
+        const branches = branchFilter(model.pattern, refs);
+        model.branches = branches;
 
-        project.progress = 100;
-        callback(null, project);
+        model.state = 'up-to-date';
+        model.progress = 100;
+        callback(null, model);
       }).
       catch(function(error) {
+        model.state = 'error';
         callback(error);
       });
   };
 
   self.updateRepository = function(project, callback) {
-    return project.repository.fetch('origin', {
+    const model = repositories[project._id];
+
+    return model.repository.fetch('origin', {
       callbacks: {
         credentials: function(repo, user) {
           return self.credentials(project, user);
         },
         transferProgress: function(progress) {
-          project.progress = calculateProgress(progress);
+          model.progress = calculateProgress(progress);
         }
       }
     }).
       then(function() {
-        return project.repository.refreshIndex();
+        return model.repository.refreshIndex();
       }).
       then(function() {
-        return nodegit.Reference.list(project.repository);
+        return nodegit.Reference.list(model.repository);
       }).
       then(function(refs) {
-        const branches = branchFilter(refs);
-        project.branches = branches;
+        const branches = branchFilter(model.pattern, refs);
+        model.branches = branches;
 
-        project.progress = 100;
-        callback(null, project);
-      }).
-      catch(function(error) {
-        callback(error);
-      });
-  };
-
-  self.openRepository = function(project, callback) {
-    nodegit.Repository.open(project.gitPath).
-      then(function(repo) {
-        project.repository = repo;
+        model.progress = 100;
         callback(null, project);
       }).
       catch(function(error) {

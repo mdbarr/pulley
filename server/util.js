@@ -11,6 +11,7 @@ function Util(pulley) {
 
   self.noop = () => undefined;
 
+  self.camelize = barrkeep.camelize;
   self.clone = barrkeep.deepClone;
   self.merge = barrkeep.merge;
 

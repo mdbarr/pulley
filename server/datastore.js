@@ -190,7 +190,8 @@ function DataStore(pulley) {
               password: pulley.config.localPassword,
               organization: organization._id,
               name: 'Administrator',
-              email: 'blackhole@pulley.blue'
+              email: 'blackhole@pulley.blue',
+              roles: [ 'global.admin' ]
             });
 
             async.parallel([

@@ -86,10 +86,8 @@ function Auth(pulley) {
 
   //////////
 
-  self.requireUser = function(req, res, next) {
-    const context = pulley.models.context(req, res, next);
-
-    const sessionId = req.cookies[cookieName];
+  self.authenticate = function(context, next) {
+    const sessionId = context.request.cookies[cookieName];
     if (!sessionId) {
       return context.error(401, 'no such session');
     }
@@ -103,7 +101,8 @@ function Auth(pulley) {
             return context.error(401, 'no such user');
           } else {
 
-            req.authorization = {
+            context.request.authorization = {
+              organization: user.organization,
               session: sessionId,
               user: user._id
             };
@@ -115,13 +114,19 @@ function Auth(pulley) {
     });
   };
 
+  self.requireUser = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+
+    self.authenticate(context, next);
+  };
+
   self.requireRole = function(role) {
     return function(req, res, next) {
-      req.authorization = {
-        role
-      };
-
-      next();
+      const context = pulley.models.context(req, res, next);
+      self.authenticate(context, function() {
+        console.log('HERE', role);
+        next();
+      });
     };
   };
 

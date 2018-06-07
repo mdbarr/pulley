@@ -56,7 +56,24 @@ function Models(pulley) {
     const model = {
       _id: _id || pulley.store.generateId(),
       ttl: ttl || pulley.config.cache.sessionTTL,
+      organization: user.organization,
       user: user._id
+    };
+
+    return model;
+  };
+
+  ////////////////////
+  // Repository
+  self.repository = function(project) {
+    const model = {
+      project: project._id,
+      organization: project.organization,
+      state: 'initializing',
+      progress: 0,
+      pattern: new RegExp(project.branchPattern),
+      branches: [],
+      repository: null
     };
 
     return model;
@@ -115,34 +132,39 @@ function Models(pulley) {
   self.project = function({
     _id, name, created, organization, type, description,
     origin, isRemote, repoName, localPath, gitPath,
-    credentials, rules, webhook,
-    users, groups, options, metadata
+    credentials, rules, webhook, branchPattern,
+    scheme, users, groups, options, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
-      name,
       created: created || Date.now(),
       organization,
       type: type || 'git',
-      description,
+      name,
+      description: description || '',
       origin,
       isRemote: isRemote || true,
-      credentials: credentials || pulley.config[self.type].credentials,
       rules: rules || {},
+      scheme: scheme || 'implicit',
       users: users || [],
       groups: groups || [],
-      options: {
-        requireFullApproval: options.requireFullApproval
+      options: options || {
+        requireFullApproval: true
       },
-      metadata: metadata || {}
+      metadata: metadata || {},
+      branchPattern: branchPattern || '/^r/(.*?)/(.*?)$/'
     };
 
-    model.repoName = repoName || path.basename(self.origin, '.git');
-    model.localPath = localPath || path.join(pulley.config.git.path, organization, self.repoName);
-    model.gitPath = gitPath || path.join(self.path, '.git');
+    model.credentials = credentials || pulley.config[model.type].credentials;
+
+    model.repoName = repoName || path.basename(model.origin, '.git');
+    model.localPath = localPath || path.join(pulley.config.git.path,
+                                             model._id,
+                                             model.repoName);
+    model.gitPath = gitPath || path.join(model.localPath, '.git');
 
     model.webhook = webhook || {
-      url: `/api/webhooks/${ pulley.store.generateId() }`,
+      url: `/api/webhooks/${ model._id }`,
       secret: pulley.store.generateId(),
       requireSecret: false
     };

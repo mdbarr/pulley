@@ -45,6 +45,18 @@ describe('Basic Spec', function() {
       });
   });
 
+  it('should create a test project', function() {
+    const testProject = {
+      name: 'pulley-test',
+      origin: 'git@github.com:mdbarr/pulley-test.git'
+    };
+
+    return client.post('/projects', testProject).
+      then(function(project) {
+        console.pp(project);
+      });
+  });
+
   /*
   it('should create a test project', function(done) {
     this.timeout(60000);
