@@ -159,7 +159,7 @@ function Projects(pulley) {
         project: req.params.id,
         source: req.body.source,
         target: req.body.target,
-        owner: context.user,
+        author: context.user,
         title: req.body.title,
         description: req.body.description,
         reviewers: req.body.reviewers,
@@ -168,7 +168,7 @@ function Projects(pulley) {
 
       self.generateBranchChangeset(project, pullRequest, function(error, changeset) {
         if (error) {
-          return context.error(500, 'change set generation failed');
+          return context.error(500, 'changeset generation failed');
         }
 
         pullRequest.head = changeset.sourceCommit;
@@ -176,7 +176,7 @@ function Projects(pulley) {
 
         pulley.store.pullRequests.add(pullRequest, function(error) {
           if (error) {
-            return context.error(500, 'pull request cretaion failed');
+            return context.error(500, 'pull request creation failed');
           }
 
           context.send(pullRequest);

@@ -208,7 +208,7 @@ function Models(pulley) {
   ////////////////////
   // Pull Request
   self.pullRequest = function({
-    _id, organization, project, source, target, head, owner,
+    _id, organization, project, source, target, head, author,
     title, description, created, updated, hidden, state,
     reviewers, commits, versions, metadata
   }) {
@@ -222,14 +222,17 @@ function Models(pulley) {
       source,
       target,
       head: head || null,
-      owner,
+      author,
       title,
       description,
       created: created || timestamp,
       updated: updated || timestamp,
       hidden,
       state: state || 'draft',
-      reviewers: reviewers || [],
+      reviewers: reviewers || {
+        users: [],
+        groups: []
+      },
       commits: commits || {},
       versions: versions || [],
       metadata: metadata || {}
@@ -245,6 +248,8 @@ function Models(pulley) {
       _id: pulley.store.generateId(),
       object: 'changeset',
       review: pullRequest._id,
+      title: pullRequest.title,
+      description: pullRequest.description,
       version: pullRequest.versions.length + 1,
       sourceCommit: null,
       targetCommit: null,
