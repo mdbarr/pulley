@@ -309,9 +309,22 @@ function Git(pulley) {
                                 const binary = !!blob.isBinary();
                                 change.blobs[file] = {
                                   binary: binary,
-                                  content: binary ? blob.content() : blob.toString(),
+                                  content: binary ? blob.content().toString('base64') :
+                                    blob.toString(),
+                                  original: null,
                                   type: mime.lookup(file)
                                 };
+
+                                return targetCommit.getEntry(file);
+                              }).
+                              then(function(targetEntry) {
+                                return targetEntry.getBlob();
+                              }).
+                              then(function(blob) {
+                                const binary = !!blob.isBinary();
+                                change.blobs[file].original = binary ?
+                                  blob.content().toString('base64') :
+                                  blob.toString();
                               });
                           });
                       });
