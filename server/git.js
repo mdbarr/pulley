@@ -241,7 +241,7 @@ function Git(pulley) {
               return next(null, commit.sha());
             }
 
-            const change = pulley.models.change(commit);
+            const change = pulley.models.commit(commit);
 
             commit.getDiff().
               then(function(diffList) {
@@ -288,6 +288,9 @@ function Git(pulley) {
                           }
                           return patchChain;
                         });
+                    }).
+                    catch(function(error) {
+                      next(error);
                     });
                 }
                 return diffChain.
@@ -335,6 +338,9 @@ function Git(pulley) {
       }).
       then(function(branchChanges) {
         return callback(null, branchChanges);
+      }).
+      catch(function(error) {
+        callback(error);
       });
   };
 

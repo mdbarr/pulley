@@ -10,6 +10,7 @@ function Models(pulley) {
   self.context = function(request, response, next) {
     const timestamp = pulley.util.timestamp();
     const model = {
+      object: 'context',
       requestId: pulley.store.generateId(),
       timestamp,
       request,
@@ -70,6 +71,7 @@ function Models(pulley) {
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
+      object: 'session',
       ttl: ttl || pulley.config.cache.sessionTTL,
       organization: user.organization,
       user: user._id
@@ -82,6 +84,8 @@ function Models(pulley) {
   // Repository
   self.repository = function(project) {
     const model = {
+      _id: pulley.store.generateId(),
+      object: 'repository',
       project: project._id,
       organization: project.organization,
       state: 'initializing',
@@ -101,6 +105,7 @@ function Models(pulley) {
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
+      object: 'organization',
       created: created || pulley.util.timestamp(),
       name,
       description,
@@ -114,16 +119,18 @@ function Models(pulley) {
   // User <- Organization
   self.user = function({
     _id, created, organization, username, password, name, email,
-    avatar, preferences, roles, token, metadata
+    verified, avatar, preferences, roles, token, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
+      object: 'user',
       created: created || pulley.util.timestamp(),
       organization,
       username,
       password,
       name,
       email,
+      verified,
       avatar,
       preferences: preferences || {},
       roles: roles || [],
@@ -136,8 +143,17 @@ function Models(pulley) {
 
   ////////////////////
   // Group <- Organization
-  self.group = function({}) {
-    const model = {};
+  self.group = function({
+    _id, created, name, description, users
+  }) {
+    const model = {
+      _id: _id || pulley.store.generateId(),
+      object: 'group',
+      created: created || pulley.util.timestamp(),
+      name,
+      description,
+      users: users || []
+    };
 
     return model;
   };
@@ -145,16 +161,17 @@ function Models(pulley) {
   ////////////////////
   // Project <- Organization
   self.project = function({
-    _id, name, created, organization, type, description,
+    _id, name, created, organization, vcs, description,
     origin, isRemote, repoName, localPath, gitPath,
     credentials, rules, webhook, branchPattern, masterBranch,
     scheme, users, groups, options, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
+      object: 'project',
       created: created || Date.now(),
       organization,
-      type: type || 'git',
+      vcs: vcs || 'git',
       name,
       description: description || '',
       origin,
@@ -171,7 +188,7 @@ function Models(pulley) {
       masterBranch: masterBranch || 'origin/master'
     };
 
-    model.credentials = credentials || pulley.config[model.type].credentials;
+    model.credentials = credentials || pulley.config[model.vcs].credentials;
 
     model.repoName = repoName || path.basename(model.origin, '.git');
     model.localPath = localPath || path.join(pulley.config.git.path,
@@ -199,6 +216,7 @@ function Models(pulley) {
 
     const model = {
       _id: _id || pulley.store.generateId(),
+      object: 'pull-request',
       organization,
       project,
       source,
@@ -225,6 +243,7 @@ function Models(pulley) {
   self.changeset = function(pullRequest) {
     const model = {
       _id: pulley.store.generateId(),
+      object: 'changeset',
       review: pullRequest._id,
       version: pullRequest.versions.length + 1,
       sourceCommit: null,
@@ -240,9 +259,10 @@ function Models(pulley) {
 
   ////////////////////
   // Commit <- Change Set <- Pull Request
-  self.change = function(commit) {
+  self.commit = function(commit) {
     const model = {
       _id: pulley.store.generateId(),
+      object: 'commit',
       commit: commit.sha(),
       author: commit.author().name() +
         ' <' + commit.author().email() + '>',

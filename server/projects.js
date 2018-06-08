@@ -6,7 +6,7 @@ function Projects(pulley) {
   //////////
 
   self.repository = function(project) {
-    switch (project.type) {
+    switch (project.vcs) {
       case 'git':
       default:
         return pulley.git.repository(project);
@@ -14,7 +14,7 @@ function Projects(pulley) {
   };
 
   self.cloneRepository = function(project, callback) {
-    switch (project.type) {
+    switch (project.vcs) {
       case 'git':
       default:
         return pulley.git.cloneRepository(project, callback);
@@ -22,7 +22,7 @@ function Projects(pulley) {
   };
 
   self.openRepository = function(project, callback) {
-    switch (project.type) {
+    switch (project.vcs) {
       case 'git':
       default:
         return pulley.git.openRepository(project, callback);
@@ -30,7 +30,7 @@ function Projects(pulley) {
   };
 
   self.updateRepository = function(project, callback) {
-    switch (project.type) {
+    switch (project.vcs) {
       case 'git':
       default:
         return pulley.git.updateRepository(project, callback);
@@ -38,7 +38,7 @@ function Projects(pulley) {
   };
 
   self.generateBranchChangeset = function(project, pullRequest, callback) {
-    switch (project.type) {
+    switch (project.vcs) {
       case 'git':
       default:
         return pulley.git.generateBranchChangeset(pullRequest, callback);
