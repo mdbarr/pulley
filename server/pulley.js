@@ -88,8 +88,9 @@ function Pulley(config = {}) {
 
   self.organizations = require('./organizations')(self);
   self.users = require('./users')(self);
+  self.groups = require('./groups')(self);
   self.projects = require('./projects')(self);
-  self.reviews = require('./reviews')(self);
+  self.pullRequests = require('./pullRequests')(self);
 
   ////////////////////
 

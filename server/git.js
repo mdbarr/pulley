@@ -39,7 +39,7 @@ function Git(pulley) {
   self.cloneRepository = function(project, callback) {
     callback = pulley.util.callback(callback);
 
-    pulley.events.emit('repo.git.clone', project);
+    pulley.events.emit('repo.git.cloning', project);
 
     const model = pulley.models.repository(project);
     repositories[project._id] = model;
@@ -73,6 +73,8 @@ function Git(pulley) {
 
         model.state = 'up-to-date';
         model.progress = 100;
+
+        pulley.events.emit('repo.git.cloned', project, model);
         callback(null, model);
       }).
       catch(function(error) {
@@ -84,7 +86,7 @@ function Git(pulley) {
   self.updateRepository = function(project, callback) {
     callback = pulley.util.callback(callback);
 
-    pulley.events.emit('repo.git.update', project);
+    pulley.events.emit('repo.git.updating', project);
 
     const model = repositories[project._id];
 
@@ -110,6 +112,8 @@ function Git(pulley) {
 
         model.state = 'up-to-date';
         model.progress = 100;
+
+        pulley.events.emit('repo.git.updated', project, model);
         callback(null, project);
       }).
       catch(function(error) {
@@ -120,7 +124,7 @@ function Git(pulley) {
   self.openRepository = function(project, callback) {
     callback = pulley.util.callback(callback);
 
-    pulley.events.emit('repo.git.open', project);
+    pulley.events.emit('repo.git.opening', project);
 
     const model = pulley.models.repository(project);
     repositories[project._id] = model;
@@ -169,6 +173,8 @@ function Git(pulley) {
     let sourceTree;
     let targetTree;
     const commits = [];
+
+    pulley.events.emit('pull-request.changeset.generating', pullRequest);
 
     callback = pulley.util.callback(callback);
 
@@ -350,6 +356,7 @@ function Git(pulley) {
         });
       }).
       then(function(branchChanges) {
+        pulley.events.emit('pull-request.changeset.generated', branchChanges);
         return callback(null, branchChanges);
       }).
       catch(function(error) {

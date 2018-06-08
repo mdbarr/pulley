@@ -4,6 +4,7 @@ describe('Basic Spec', function() {
   const client = new Client();
 
   let project;
+  let pullRequest;
 
   it('should verify a running instance of Pulley', function() {
     pulley.should.have.property('config');
@@ -117,11 +118,21 @@ describe('Basic Spec', function() {
     };
 
     return client.post(`/projects/${ project._id }/pull`, pull).
-      then(function(pullRequest) {
+      then(function(pr) {
+        pullRequest = pr;
+
         pullRequest.should.be.ok();
         pullRequest.should.have.property('object', 'pull-request');
         pullRequest.should.have.property('source', pull.source);
         pullRequest.should.have.property('target', pull.target);
+      });
+  });
+
+  it('should get and verify the pull request', function() {
+    return client.get(`/pulls/${ pullRequest._id }`).
+      then(function(pr) {
+        pr.should.be.ok();
+        pr.should.have.property('_id', pullRequest._id);
       });
   });
 
