@@ -99,6 +99,26 @@ function Util(pulley) {
     return new RegExp('^' + string.replace(escapePattern, '\\$&') + '$');
   };
 
+  //////////
+  // Shims
+
+  Object.defineProperty(Array.prototype, 'add', {
+    value: function(item) {
+      if (!this.includes(item)) {
+        this.push(item).sort();
+      }
+      return this;
+    },
+    enumerable: false
+  });
+
+  Object.defineProperty(Array.prototype, 'has', {
+    value: function(item) {
+      return this.includes(item);
+    },
+    enumerable: false
+  });
+
   return self;
 }
 

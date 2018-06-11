@@ -3,7 +3,7 @@
 const path = require('path');
 const async = require('async');
 
-////////////////////////////////////////////////
+////////////////////
 
 const defaults = {
   name: 'pulley',
@@ -56,7 +56,7 @@ const defaults = {
   silent: false
 };
 
-////////////////////////////////////////////////
+////////////////////
 
 function Pulley(config = {}) {
   const self = this;
@@ -80,8 +80,9 @@ function Pulley(config = {}) {
   self.smtp = require('./smtpServer')(self);
 
   self.auth = require('./auth')(self);
-
   self.roles = require('./roles')(self);
+  self.resource = require('./resource')(self);
+
   self.models = require('./models')(self);
 
   self.git = require('./git')(self);
@@ -119,6 +120,6 @@ function Pulley(config = {}) {
   return self;
 }
 
-//////////////////////////////////////////////////
+////////////////////
 
 module.exports = Pulley;

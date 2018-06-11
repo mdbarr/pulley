@@ -5,7 +5,7 @@ function Auth(pulley) {
 
   const cookieName = pulley.config.api.cookie || pulley.config.name;
 
-  //////////
+  ////////////////////
 
   self.createSession = function(context, user) {
     user.metadata.lastLogin = Date.now();
@@ -31,7 +31,7 @@ function Auth(pulley) {
     return session;
   };
 
-  //////////
+  ////////////////////
 
   self.login = function(req, res, next) {
     const context = pulley.models.context(req, res, next);
@@ -84,7 +84,7 @@ function Auth(pulley) {
     });
   };
 
-  //////////
+  ////////////////////
 
   self.authenticate = function(context, next) {
     const sessionId = context.request.cookies[cookieName];
@@ -131,12 +131,12 @@ function Auth(pulley) {
     };
   };
 
-  //////////
+  ////////////////////
 
   pulley.apiServer.post('/api/session', self.login);
   pulley.apiServer.get('/api/session', self.requireUser, self.getSession);
 
-  //////////
+  ////////////////////
 
   return self;
 }

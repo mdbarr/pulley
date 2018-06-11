@@ -5,7 +5,7 @@ const rimraf = require('rimraf');
 const mime = require('mime-types');
 const nodegit = require('nodegit');
 
-////////////////////////////////////////
+////////////////////
 
 function branchFilter(pattern, master, refs) {
   return refs.filter(ref => ref.startsWith('refs/remotes/')).
@@ -21,12 +21,12 @@ function calculateProgress(progress) {
   return percent;
 }
 
-////////////////////////////////////////
+////////////////////
 
 function Git(pulley) {
   const self = this;
 
-  //////////
+  ////////////////////
 
   const repositories = {};
 
@@ -34,7 +34,7 @@ function Git(pulley) {
     return repositories[project._id];
   };
 
-  //////////
+  ////////////////////
 
   self.cloneRepository = function(project, callback) {
     callback = pulley.util.callback(callback);
@@ -144,21 +144,17 @@ function Git(pulley) {
       });
   };
 
-  self.updateReview = function(project, review, callback) {
-    return project.repository.getBranchCommit(review.source).
+  self.updatePullRequest = function(pullRequest, callback) {
+    callback = pulley.util.callback(callback);
+
+    const model = repositories[pullRequest.project];
+
+    return model.repository.getBranchCommit(pullRequest.source).
       then(function(currentHead) {
-        if (currentHead.sha() === review.head) {
-          callback(null, review); // no-op
+        if (currentHead.sha() === pullRequest.head) {
+          return callback(null, pullRequest); // no changes
         } else {
-          self.generateReviewChangeset(review, project.repository).
-            then(function(changeset) {
-              review.head = changeset.sourceCommit;
-              review.versions.unshift(changeset);
-
-              review.updated = Date.now();
-
-              callback(null, review);
-            });
+          return self.generateChangeset(pullRequest, callback);
         }
       }).
       catch(function(error) {
@@ -166,7 +162,7 @@ function Git(pulley) {
       });
   };
 
-  self.generateBranchChangeset = function(pullRequest, callback) {
+  self.generateChangeset = function(pullRequest, callback) {
     let sourceCommit;
     let targetCommit;
     let mergebase;
@@ -355,9 +351,14 @@ function Git(pulley) {
           });
         });
       }).
-      then(function(branchChanges) {
-        pulley.events.emit('pull-request.changeset.generated', branchChanges);
-        return callback(null, branchChanges);
+      then(function(changes) {
+        pulley.events.emit('pull-request.changeset.generated', changes);
+
+        pullRequest.head = changes.sourceCommit;
+        pullRequest.versions.unshift(changes);
+        pullRequest.version = changes.version;
+
+        return callback(null, pullRequest);
       }).
       catch(function(error) {
         callback(error);
@@ -416,7 +417,7 @@ function Git(pulley) {
   };
 }
 
-////////////////////////////////////////
+////////////////////
 
 module.exports = function(pulley) {
   return new Git(pulley);

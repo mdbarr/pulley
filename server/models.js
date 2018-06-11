@@ -209,8 +209,8 @@ function Models(pulley) {
   // Pull Request
   self.pullRequest = function({
     _id, organization, project, source, target, head, author,
-    title, description, created, updated, hidden, state,
-    reviewers, commits, versions, metadata
+    vcs, title, description, created, updated, hidden, state,
+    reviewers, version, commits, versions, metadata
   }) {
     const timestamp = Date.now();
 
@@ -219,6 +219,7 @@ function Models(pulley) {
       object: 'pull-request',
       organization,
       project,
+      vcs,
       source,
       target,
       head: head || null,
@@ -233,6 +234,7 @@ function Models(pulley) {
         users: [],
         groups: []
       },
+      version: version || 0,
       commits: commits || {},
       versions: versions || [],
       metadata: metadata || {}

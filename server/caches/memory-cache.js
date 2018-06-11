@@ -5,7 +5,7 @@ function MemoryCache(pulley) {
 
   const cache = {};
 
-  //////////
+  ////////////////////
 
   self.set = function(key, value, ttl, callback) {
     callback = pulley.util.callback(callback);
@@ -39,7 +39,7 @@ function MemoryCache(pulley) {
     callback(null);
   };
 
-  ///////////
+  ////////////////////
 
   function reaper() {
     for (const key in cache) {
@@ -59,7 +59,7 @@ function MemoryCache(pulley) {
     callback(null);
   };
 
-  //////////
+  ////////////////////
 
   return self;
 }

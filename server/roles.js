@@ -4,10 +4,15 @@ function Roles() {
   const self = this;
 
   const roles = {
+    'global.admin': 'Global administrator',
+
+    'organization.create': 'Able to create an organization',
+
     'user.create': 'Able to create new users',
     'user.edit': 'Able to edit users',
     'user.delete': 'Able to delete users',
     'user.password.reset': 'Able to reset passwords',
+    'user.list': 'Able to list all users',
 
     'user.email.validate': 'Able to mark a users email address as valid',
     'user.email.view': 'Able to view a users email',
@@ -18,8 +23,17 @@ function Roles() {
     'group.create': 'Able to create a new group',
 
     'project.create': 'Able to create a new project',
-    'project.edit': 'Able to edit projects'
+    'project.edit': 'Able to edit projects',
+    'project.list.users': 'Able to list users associated with the project',
+    'project.list.groups': 'Able to list groupss associated with the project'
   };
+
+  self.defaultRoles = [
+    'user.self.edit',
+    'pullRequest.create',
+    'pullRequest.owner.edit',
+    'pullRequest.owner.update'
+  ];
 
   global.ROLES = roles;
 

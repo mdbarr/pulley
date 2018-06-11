@@ -20,7 +20,7 @@ function DataStore(pulley) {
     wrappers: {}
   };
 
-  //////////
+  ////////////////////
 
   const wrappers = {
     add: function(table, item, callback) {
@@ -88,7 +88,7 @@ function DataStore(pulley) {
     }
   };
 
-  //////////
+  ////////////////////
 
   const registration = {
     define: function(options) {
@@ -143,14 +143,14 @@ function DataStore(pulley) {
     }
   }
 
-  //////////
+  ////////////////////
 
   self.id = self.generateId = pulley.util.generateId;
   self.timestamp = pulley.util.timestamp;
 
   const _engine = parseEngine();
 
-  //////////
+  ////////////////////
 
   self.table = function(name) {
     if (store.wrappers[name]) {

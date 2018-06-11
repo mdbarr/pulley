@@ -100,7 +100,7 @@ function MemoryStore(pulley, expectations, registration) {
     callback(null);
     };
 
-    //////////
+    ////////////////////
 
     */
 

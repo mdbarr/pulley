@@ -136,6 +136,19 @@ describe('Basic Spec', function() {
       });
   });
 
+  it('should update the pull request source branch', function() {
+    return client.put(`/pulls/${ pullRequest._id }`, {
+      source: 'origin/two-ahead'
+    }).
+      then(function(pr) {
+        pr.should.have.property('_id', pullRequest._id);
+        pr.should.have.property('source', 'origin/two-ahead');
+
+        pullRequest = pr;
+        //console.pp(pr);
+      });
+  });
+
   /*
   it('should update the review mimicking a new commit', function(done) {
     review.source = 'origin/two-ahead'; // hack to advance the HEAD
