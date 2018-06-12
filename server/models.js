@@ -22,10 +22,10 @@ function Models(pulley) {
       organization: null
     };
 
-    if (request.authorization) {
-      model.session = request.authorization.session;
-      model.user = request.authorization.user;
-      model.organization = request.authorization.organization;
+    if (request.session) {
+      model.session = request.session;
+      model.user = request.session.user;
+      model.organization = request.session.user.organization;
     }
 
     model.send = function(statusCode, object) {
@@ -101,15 +101,17 @@ function Models(pulley) {
   ////////////////////
   // Organization
   self.organization = function({
-    _id, created, name, description, logo
+    _id, created, name, description, logo, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
       object: 'organization',
       created: created || pulley.util.timestamp(),
       name,
-      description,
-      logo
+      description: description || '',
+      logo: logo || null,
+      metadata: metadata || {},
+      deleted: false
     };
 
     return model;
@@ -130,12 +132,13 @@ function Models(pulley) {
       password,
       name,
       email,
-      verified,
-      avatar,
+      verified: verified || false,
+      avatar: avatar || null,
       preferences: preferences || {},
       roles: roles || [],
       token: token || pulley.store.generateId(),
-      metadata: metadata || {}
+      metadata: metadata || {},
+      deleted: false
     };
 
     return model;
@@ -144,15 +147,18 @@ function Models(pulley) {
   ////////////////////
   // Group <- Organization
   self.group = function({
-    _id, created, name, description, users
+    _id, created, organization, name, description, users, metadata
   }) {
     const model = {
       _id: _id || pulley.store.generateId(),
       object: 'group',
       created: created || pulley.util.timestamp(),
+      organization,
       name,
       description,
-      users: users || []
+      users: users || [],
+      metadata: metadata || {},
+      deleted: false
     };
 
     return model;
@@ -185,7 +191,8 @@ function Models(pulley) {
       },
       metadata: metadata || {},
       branchPattern: branchPattern || pulley.config.options.branchPattern,
-      masterBranch: masterBranch || 'origin/master'
+      masterBranch: masterBranch || 'origin/master',
+      deleted: false
     };
 
     model.credentials = credentials || pulley.config[model.vcs].credentials;
@@ -228,7 +235,7 @@ function Models(pulley) {
       description,
       created: created || timestamp,
       updated: updated || timestamp,
-      hidden,
+      hidden: hidden || false,
       state: state || 'draft',
       reviewers: reviewers || {
         users: [],
@@ -237,7 +244,8 @@ function Models(pulley) {
       version: version || 0,
       commits: commits || {},
       versions: versions || [],
-      metadata: metadata || {}
+      metadata: metadata || {},
+      deleted: false
     };
 
     return model;

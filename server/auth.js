@@ -19,13 +19,11 @@ function Auth(pulley) {
       if (error) {
         return context.error(500, 'cache error');
       }
-
       context.response.setCookie(cookieName, session._id);
 
-      context.send(200, {
-        session,
-        user
-      });
+      const response = Object.clone(session);
+      response.user = user;
+      context.send(200, response);
     });
 
     return session;
@@ -66,7 +64,7 @@ function Auth(pulley) {
   self.getSession = function(req, res, next) {
     const context = pulley.models.context(req, res, next);
 
-    pulley.cache.get(req.authorization.session, function(error, session) {
+    pulley.cache.get(req.session._id, function(error, session) {
       if (error) {
         return context.error(500, 'no such session');
       } else {
@@ -74,10 +72,9 @@ function Auth(pulley) {
           if (error) {
             return context.error(500, 'no such user');
           } else {
-            context.send(200, {
-              session,
-              user
-            });
+            const response = Object.clone(session);
+            response.user = user;
+            context.send(200, response);
           }
         });
       }
@@ -86,8 +83,10 @@ function Auth(pulley) {
 
   ////////////////////
 
-  self.authenticate = function(context, next) {
-    const sessionId = context.request.cookies[cookieName];
+  self.authenticate = function(req, res, next) {
+    const context = pulley.models.context(req, res, next);
+    const sessionId = req.cookies[cookieName];
+
     if (!sessionId) {
       return context.error(401, 'no such session');
     }
@@ -101,11 +100,8 @@ function Auth(pulley) {
             return context.error(401, 'no such user');
           } else {
 
-            Object.assign(context.request.authorization, {
-              organization: user.organization,
-              session: sessionId,
-              user: user._id
-            });
+            context.request.session = Object.clone(session);
+            context.request.session.user = Object.clone(user);
 
             next();
           }
@@ -114,27 +110,24 @@ function Auth(pulley) {
     });
   };
 
-  self.requireUser = function(req, res, next) {
-    const context = pulley.models.context(req, res, next);
-
-    self.authenticate(context, next);
-  };
-
-  self.requireRole = function(role) {
+  self.role = function(role) {
     return function(req, res, next) {
       const context = pulley.models.context(req, res, next);
-      self.authenticate(context, function() {
-        // RBAC
-        req.authorization.role = role;
+
+      if (!req.session.user.roles.includes(role)) {
+        context.error(403, `forbidden - requires role ${ role }.`);
+      } else {
         next();
-      });
+      }
     };
   };
 
   ////////////////////
 
   pulley.apiServer.post('/api/session', self.login);
-  pulley.apiServer.get('/api/session', self.requireUser, self.getSession);
+  pulley.apiServer.get('/api/session',
+                       self.authenticate,
+                       self.getSession);
 
   ////////////////////
 

@@ -144,17 +144,17 @@ function PullRequests(pulley) {
   ////////////////////
 
   pulley.apiServer.get('/api/pulls/:id',
-                       pulley.auth.requireUser,
+                       pulley.auth.authenticate,
                        pulley.resource.read('params.id', 'pullRequest'),
                        self.getPullRequest);
 
   pulley.apiServer.put('/api/pulls/:id',
-                       pulley.auth.requireUser,
+                       pulley.auth.authenticate,
                        //pulley.resource.edit('project', 'id'),
                        self.updatePullRequest);
 
   pulley.apiServer.post('/api/pulls/:id/changes',
-                        pulley.auth.requireUser,
+                        pulley.auth.authenticate,
                         //pulley.resource.edit('project', 'id'),
                         self.updatePullRequestChanges);
 

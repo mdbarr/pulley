@@ -33,12 +33,13 @@ function Resource(pulley) {
       const context = pulley.models.context(req, res, next);
 
       req.resource = req.resource || {};
-      pulley.events.emit('resource.read', req.authorization);
 
       async.each(resources, function(resource, done) {
         const id = Object.resolve(req, resource[0]);
         const binding = resource[2] || resource[1];
         const type = (resource[1] === binding) ? binding + 's' : resource[1];
+
+        pulley.events.emit(`resource.${ type }.${ access }`, id, req.session);
 
         console.log('id = %s, type = %s, binding = %s', id, type, binding);
         pulley.store[type].find({

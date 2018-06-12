@@ -99,7 +99,7 @@ function Util(pulley) {
     return new RegExp('^' + string.replace(escapePattern, '\\$&') + '$');
   };
 
-  //////////
+  ////////////////////
   // Shims
 
   Object.defineProperty(Array.prototype, 'add', {

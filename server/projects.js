@@ -63,7 +63,7 @@ function Projects(pulley) {
 
     const project = pulley.models.project({
       name: req.body.name,
-      organization: req.authorization.organization,
+      organization: context.organization,
       description: req.body.description,
       origin: req.body.origin,
       credentials: req.body.credentials,
@@ -137,19 +137,20 @@ function Projects(pulley) {
   ////////////////////
 
   pulley.apiServer.post('/api/projects',
-                        pulley.auth.requireRole('admin'),
+                        pulley.auth.authenticate,
+                        pulley.auth.role('global.admin'),
                         self.createProject);
 
   pulley.apiServer.get('/api/projects',
-                       pulley.auth.requireUser,
+                       pulley.auth.authenticate,
                        self.getProjects);
 
   pulley.apiServer.get('/api/projects/:id',
-                       pulley.auth.requireUser,
+                       pulley.auth.authenticate,
                        self.getProject);
 
   pulley.apiServer.post('/api/projects/:id/pull',
-                        pulley.auth.requireUser,
+                        pulley.auth.authenticate,
                         self.createPullRequest);
 
   ////////////////////

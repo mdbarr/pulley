@@ -31,16 +31,18 @@ describe('Basic Spec', function() {
       password: pulley.config.localPassword
     }).
       then(function(session) {
-        session.should.have.property('session');
+        session.should.have.property('object', 'session');
         session.should.have.property('user');
+        session.user.should.be.instanceOf(Object);
       });
   });
 
   it('should validation the current session', function() {
     return client.get('/session').
       then(function(session) {
-        session.should.have.property('session');
+        session.should.have.property('object', 'session');
         session.should.have.property('user');
+        session.user.should.be.instanceOf(Object);
       });
   });
 
