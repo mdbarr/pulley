@@ -113,11 +113,12 @@ function Auth(pulley) {
   self.role = function(role) {
     return function(req, res, next) {
       const context = pulley.models.context(req, res, next);
-
-      if (!req.session.user.roles.includes(role)) {
-        context.error(403, `forbidden - requires role ${ role }.`);
+      if (req.session.user.roles.includes('global.admin')) {
+        return next();
+      } else if (!req.session.user.roles.includes(role)) {
+        return context.error(403, `forbidden - requires role ${ role }.`);
       } else {
-        next();
+        return next();
       }
     };
   };
@@ -125,6 +126,7 @@ function Auth(pulley) {
   ////////////////////
 
   pulley.apiServer.post('/api/session', self.login);
+
   pulley.apiServer.get('/api/session',
                        self.authenticate,
                        self.getSession);

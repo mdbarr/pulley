@@ -138,7 +138,7 @@ function Projects(pulley) {
 
   pulley.apiServer.post('/api/projects',
                         pulley.auth.authenticate,
-                        pulley.auth.role('global.admin'),
+                        pulley.auth.role('project.create'),
                         self.createProject);
 
   pulley.apiServer.get('/api/projects',
