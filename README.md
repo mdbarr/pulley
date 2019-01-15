@@ -1,19 +1,21 @@
 # pulley
 
-> An opinionated code review tool for git repositories.
-
-## Build Setup
-
-``` bash
-# install dependencies
+## Project setup
+```
 yarn install
+```
 
-# serve with hot reload at localhost:8080
-yarn run dev
+### Compiles and hot-reloads for development
+```
+yarn run serve
+```
 
-# build for production with minification
+### Compiles and minifies for production
+```
 yarn run build
+```
 
-# build for production and view the bundle analyzer report
-yarn run build --report
+### Lints and fixes files
+```
+yarn run lint
 ```
