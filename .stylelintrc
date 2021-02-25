@@ -1,0 +1,17 @@
+{
+  "extends": "stylelint-config-standard",
+  "plugins": [
+    "stylelint-order"
+  ],
+  "rules": {
+    "color-named": "always-where-possible",
+    "font-weight-notation": "named-where-possible",
+    "max-line-length": 100,
+    "order/order": [
+      "custom-properties",
+      "declarations"
+    ],
+    "order/properties-alphabetical-order": true,
+    "shorthand-property-no-redundant-values": true
+  }
+}
