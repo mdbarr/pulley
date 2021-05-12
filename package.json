@@ -17,7 +17,7 @@
     "mime-types": "^2.1.24",
     "mkdirp": "^0.5.1",
     "nodegit": "^0.24.3",
-    "nodemailer": "^6.3.0",
+    "nodemailer": "^6.4.16",
     "request": "^2.86.0",
     "restify": "^8.3.3",
     "restify-cookies": "^0.2.5",
